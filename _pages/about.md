@@ -211,7 +211,7 @@ My Interest include Backend Engineer and Cloud/Platform Engineer.
         In this project, I architected and implemented a fully modular programming‐language interpreter in Java, building distinct Lexer, Parser and Interpreter components to support tokenization, AST construction and execution. I developed a sophisticated static type system, pattern matching and ternary operations alongside first‑class support for arrays, user‑defined and built‑in functions, and full control structures (if‑else, while/for/do‑while). A robust scoping model manages global and local variables, and comprehensive error handling and logging ensure reliable runtime behavior. 
       </p>
     </div>
-  </div>
+</div>
 </div>
 <div style="clear:both"></div>
 <hr width="100%" size="1" align="center" />
