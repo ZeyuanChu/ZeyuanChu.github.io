@@ -7,9 +7,9 @@
 
 # Site Settings
 title                    : "Zeyuan Chu-HomePage"
-description              : "This is the personal website of Zeyuan Chu, sharing education background, projects, and skills."
+description              : "Welcome to my personal website"
 repository               : "ZeyuanChu/acad-homepage.github.io"
-google_scholar_stats_use_cdn : true
+# google_scholar_stats_use_cdn : true
 
 # google analytics
 google_analytics_id      :  # get google_analytics_id from https://analytics.google.com/analytics/
@@ -25,38 +25,38 @@ author:
   avatar           : "images/MyPic.jpg"
   bio              : 
   location         : "Albany, NY"
-  employer         :
+  employer         : 
   pubmed           : 
-  googlescholar    : 
+#  googlescholar    : ""
   email            : "chuzeyuan@gmail.com"
-  researchgate     :  # e.g., "https://www.researchgate.net/profile/yourprofile"
-  uri              :
-  bitbucket        :
-  codepen          :
-  dribbble         :
-  flickr           :
-  facebook         :
-  foursquare       :
+  researchgate     : 
+  uri              : 
+  bitbucket        : 
+  codepen          : 
+  dribbble         : 
+  flickr           : 
+  facebook         : 
+  foursquare       : 
   github           : "ZeyuanChu"
-  google_plus      :
-  keybase          :
-  instagram        :
-  impactstory      : # e.g., "https://profiles.impactstory.org/u/xxxx-xxxx-xxxx-xxxx"
-  lastfm           :
-  linkedin         : # e.g., "linkedin username"
-  dblp             : # e.g., "https://dblp.org/pid/xx/xxxx.html"
-  orcid            : # e.g., "https://orcid.org/xxxx"
-  pinterest        :
-  soundcloud       :
-  stackoverflow    : # http://stackoverflow.com/users/123456/username
-  steam            :
-  tumblr           :
+  google_plus      : 
+  keybase          : 
+  instagram        : 
+  impactstory      : 
+  lastfm           : 
+  linkedin         : "www.linkedin.com/in/zeyuan-chu-511910257"
+  dblp             : 
+  orcid            : 
+  pinterest        : 
+  soundcloud       : 
+  stackoverflow    : 
+  steam            : 
+  tumblr           : 
   twitter          : 
-  vine             :
-  weibo            :
-  xing             :
-  youtube          :
-  wikipedia        :
+  vine             : 
+  weibo            : 
+  xing             : 
+  youtube          : 
+  wikipedia        : 
 
 
 # Reading Files

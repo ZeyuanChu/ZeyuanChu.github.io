@@ -4,13 +4,13 @@ main:
     url: "/#about-me"
 
   - title: "Education"
-    url: "/#-news"
+    url: "/#-education"
 
   - title: "Experience"
-    url: "/#-publications"
+    url: "/#-experience"
 
   - title: "Projects"
-    url: "/#-honors-and-awards"
+    url: "/#-projects"
 
-  - title: "Skill"
-    url: "/#-educations"
+  - title: "Skills"
+    url: "/#-skills"
