@@ -7,7 +7,12 @@ redirect_from:
   - /about/
   - /about.html
 ---
-
+{% if site.google_scholar_stats_use_cdn %}
+{% assign gsDataBaseUrl = "https://cdn.jsdelivr.net/gh/" | append: site.repository | append: "@" %}
+{% else %}
+{% assign gsDataBaseUrl = "https://raw.githubusercontent.com/" | append: site.repository | append: "/" %}
+{% endif %}
+{% assign url = gsDataBaseUrl | append: "google-scholar-stats/gs_data_shieldsio.json" %}
 <span class='anchor' id='about-me'></span>
 
 I earned my bachelor's degree in Computer Science at Univerisity At Albany State University at New York. 
@@ -32,7 +37,7 @@ My Interest include Backend Engineer and Cloud/Platform Engineer.
       <p style="margin-bottom: 0;">
         <b>University at Albany, State University of New York</b>, Albany, NY, U.S.
         <span style="float:right;">
-          <i>Sep 2022 - May 2025</i>
+          <i>Aug 2022 - May 2025</i>
         </span>
       </p>
       <ul style="list-style-type:circle; margin-top: 8px;">
@@ -129,7 +134,7 @@ My Interest include Backend Engineer and Cloud/Platform Engineer.
       <p style="margin-bottom: 0;">
         <b> Puzzle Solving <a href="https://github.com/ZeyuanChu/PuzzleSolving.git">[Project Page]</a></b>
         <span style="float:right;">
-          <i>Sep 2024 - Dec 2024</i>
+          <i>Aug 2024 - Dec 2024</i>
         </span>
       </p>
       <p>
@@ -201,7 +206,7 @@ My Interest include Backend Engineer and Cloud/Platform Engineer.
       <p style="margin-bottom: 0;">
         <b> Shank Interpreter <a href="https://github.com/ZeyuanChu/Shank1.git">[Project Page]</a></b>
         <span style="float:right;">
-          <i>Sep 2023 - Dec 2023</i>
+          <i>Aug 2023 - Dec 2023</i>
         </span>
       </p>
       <p>
