@@ -197,33 +197,10 @@ My Interest include Backend Engineer and Cloud/Platform Engineer.
 <div style="clear:both"></div>
 <hr width="100%" size="1" align="center" />
 
-<div style="width: 100%; margin-bottom: 32px;">
-  <div>
-    <div style="width:40%;float:left;display:flex;justify-content:center;">
-      <img src="/images/Shanklogo.png" alt="Shanklogo" style="width:100%; max-width:315px; border:1vw solid transparent;object-fit:cover;" />
-    </div>
-    <div style="width:60%;float:left;">
-      <p style="margin-bottom: 0;">
-        <b> Shank Interpreter <a href="https://github.com/ZeyuanChu/Shank1.git">[Project Page]</a></b>
-        <span style="float:right;">
-          <i>Aug 2023 - Dec 2023</i>
-        </span>
-      </p>
-      <p>
-        <i>Course Project of Principles Programming Languages (ICSI-311)</i>
-      </p>
-      <p>
-        In this project, I architected and implemented a fully modular programming‐language interpreter in Java, building distinct Lexer, Parser and Interpreter components to support tokenization, AST construction and execution. I developed a sophisticated static type system, pattern matching and ternary operations alongside first‑class support for arrays, user‑defined and built‑in functions, and full control structures (if‑else, while/for/do‑while). A robust scoping model manages global and local variables, and comprehensive error handling and logging ensure reliable runtime behavior. 
-      </p>
-    </div>
-</div>
-</div>
-<div style="clear:both"></div>
-<hr width="100%" size="1" align="center" />
 
 # 🔧 Skills
 <ul>
-  <li><strong>Programming Languages</strong>: JavaScript (Node.js), Python, Java</li>
+  <li><strong>Programming Languages</strong>: JavaScript (Node.js), Python,</li>
   <li><strong>Tools &amp; Frameworks</strong>: Express.js, MongoDB (Mongoose), Redis, RabbitMQ, Docker, AWS, TensorFlow, Keras (GANs), Tkinter, JWT, bcrypt</li>
 </ul>
 
