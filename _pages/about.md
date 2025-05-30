@@ -100,30 +100,7 @@ My Interest include Backend Engineer and Cloud/Platform Engineer.
 <div style="clear:both"></div>
 <hr width="100%" size="1" align="center" />
 
-<div style="width: 100%; margin-bottom: 32px;">
-  <div>
-    <div style="width:40%;float:left;display:flex;justify-content:center;">
-      <img src="/images/Innovalogo.png" alt="Innovalogo" style="width:100%; max-width:315px; border:1vw solid transparent;object-fit:cover;" />
-    </div>
-    <div style="width:60%;float:left;">
-      <p style="margin-bottom: 0;">
-        <b> Innova Tickets <a href="/images/InnovaReport.pdf" target="_blank">[Project Report]</a> <a href="https://www.innovamuseums.com" target="_blank">[Sponsor Website]</a></b>
-        <span style="float:right;">
-          <i>Jan 2025 - May 2025</i>
-        </span>
-      </p>
-      <p>
-        <i>Course Project of Capstone (ICSI-499)</i>
-      </p>
-      <p>
-        In this capstone project, I architected and implemented the backend microservices for Innova Tickets, an AI‑powered, self‑service event ticketing platform. I designed MongoDB schemas and built RESTful APIs with Node.js/Express to handle event creation, dynamic multi‑tier ticketing, and user management. I integrated Stripe to support secure, multi‑currency payments with automatic revenue splitting, and developed TensorFlow‑based recommendation and fraud‑detection engines—achieving a 25  % uplift in suggestion accuracy and 95 % fraud‑detection precision. Finally, I set up RabbitMQ and Redis to power a real‑time analytics dashboard that provides organizers with live sales and revenue insights.
-        Note: 
-      </p>
-    </div>
-  </div>
-</div>
-<div style="clear:both"></div>
-<hr width="100%" size="1" align="center" />
+
 
 <div style="width: 100%; margin-bottom: 32px;">
   <div>
