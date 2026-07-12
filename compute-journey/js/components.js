@@ -61,6 +61,16 @@ window.Components = (function () {
     for (const id of ids) { if (!level) return null; node = level.find(n => n.id === id); if (!node) return null; level = node.children; }
     return node;
   }
+  function v4Concept(node) {
+    if (!DATA.v4 || !DATA.v4.concepts || !node || !node.contentRef) return null;
+    return DATA.v4.concepts[node.contentRef] || null;
+  }
+  function v4Source(id) {
+    return DATA.v4 && DATA.v4.sources ? DATA.v4.sources[id] : null;
+  }
+  function v4Claim(id) {
+    return DATA.v4 && DATA.v4.claims ? DATA.v4.claims[id] : null;
+  }
 
   /* --------------------------- 进度环 --------------------------- */
   function ringSVG(frac, size) {
@@ -120,7 +130,10 @@ window.Components = (function () {
     DATA.stations.forEach(s => grid.appendChild(stationCard(s)));
     wrap.appendChild(grid);
 
-    wrap.appendChild(el("div", "home-footer", "内部学习资料 · 内容口径以工程团队评审为准 · 会过时的数字集中登记于「数字保鲜表」"));
+    const footerText = DATA.v4
+      ? "内容版本 " + DATA.v4.meta.version + " · 前三站 V4 样板已接入来源、口径与复核记录 · 其余站点持续迁移中"
+      : "内部学习资料 · 内容口径以工程团队评审为准 · 会过时的数字集中登记于「数字保鲜表」";
+    wrap.appendChild(el("div", "home-footer", footerText));
     return wrap;
   }
 
@@ -134,7 +147,8 @@ window.Components = (function () {
     card.innerHTML =
       '<div class="sc-top"><div class="sc-num">' + String(s.num).padStart(2, "0") + '</div>' +
         '<div class="sc-ring">' + ringSVG(prog.frac, 34) + '</div></div>' +
-      '<div class="sc-name">' + stationIcon(s, "sc-ic") + s.name + '</div>' +
+      '<div class="sc-name">' + stationIcon(s, "sc-ic") + s.name +
+        (s.contentV4 ? '<span class="sc-v4">V4 样板</span>' : '') + '</div>' +
       '<div class="sc-sub">' + s.sub + '</div>' +
       '<div class="sc-line">' + firstSentence(s.intro).replace(/【[^】]*】/g, "") + '</div>' +
       '<div class="sc-foot"><span class="sc-status ' + statusCls + '"><span class="dot"></span>' + statusTxt + '</span>' +
@@ -405,6 +419,9 @@ window.Components = (function () {
       '</div>' +
       '<h2 class="station-name">' + stationIcon(station, "sn-ic") + station.name + '</h2>' +
       '<div class="station-sub">' + station.sub + '</div>';
+
+    if (station.contentV4) left.appendChild(buildV4StationIntro(station));
+
     // 一分钟看懂
     const tldr = el("details", "tldr-block");
     tldr.innerHTML =
@@ -413,7 +430,7 @@ window.Components = (function () {
     left.appendChild(tldr);
 
     left.appendChild(el("div", "station-intro", station.intro));
-    left.appendChild(el("div", "parts-title", "可点击部件"));
+    left.appendChild(el("div", "parts-title", station.contentV4 ? "知识模块 · 点击部件" : "可点击部件"));
 
     const list = el("div", "parts-list");
     station.nodes.forEach(node => {
@@ -459,6 +476,23 @@ window.Components = (function () {
     page.appendChild(cols);
     page.appendChild(footer);
     return page;
+  }
+
+  function buildV4StationIntro(station) {
+    const profile = station.contentV4;
+    const box = el("section", "station-v4");
+    const sourceCount = (profile.sourceIds || []).length;
+    box.innerHTML =
+      '<div class="station-v4-head"><span class="station-v4-badge">V4 样板</span>' +
+        '<span class="station-v4-meta">L0–L3 · ' + sourceCount + ' 个一手来源</span></div>' +
+      '<div class="station-v4-title">' + esc(profile.focus || "分层知识样板") + '</div>';
+    if (profile.learningObjectives && profile.learningObjectives.length) {
+      const details = el("details", "station-v4-objectives");
+      details.innerHTML = '<summary><span class="chev">›</span>本站学完能做什么</summary>' +
+        '<ul>' + profile.learningObjectives.map(item => '<li>' + esc(item) + '</li>').join("") + '</ul>';
+      box.appendChild(details);
+    }
+    return box;
   }
 
   function buildStationNav(station) {
@@ -533,9 +567,14 @@ window.Components = (function () {
     content.appendChild(titleRow);
     if (node.brief) content.appendChild(el("div", "card-brief", node.brief));
 
-    /* plain */
-    content.appendChild(el("div", "card-section-label", "它负责什么"));
-    content.appendChild(el("div", "card-plain first", node.plain));
+    const concept = v4Concept(node);
+
+    /* V4 分层知识；尚未迁移的节点继续走兼容内容 */
+    if (concept) buildV4Knowledge(content, concept);
+    else {
+      content.appendChild(el("div", "card-section-label", "它负责什么"));
+      content.appendChild(el("div", "card-plain first", node.plain));
+    }
 
     /* analogy + analogyGap */
     if (node.analogy) {
@@ -545,13 +584,13 @@ window.Components = (function () {
     }
 
     /* why */
-    if (node.why) {
+    if (!concept && node.why) {
       content.appendChild(el("div", "card-section-label", "没有它会怎样"));
       content.appendChild(el("div", "card-why", node.why));
     }
 
     /* 保鲜数字 */
-    if (node.figureRefs && node.figureRefs.length && DATA.figures) {
+    if (!concept && node.figureRefs && node.figureRefs.length && DATA.figures) {
       content.appendChild(el("div", "card-section-label", "关键数字"));
       const box = el("div", "card-figures");
       node.figureRefs.forEach(ref => {
@@ -591,7 +630,7 @@ window.Components = (function () {
     }
 
     /* detail */
-    if (node.detail) {
+    if (!concept && node.detail) {
       const det = el("details", "card-detail");
       det.innerHTML = '<summary><span class="chev">›</span>技术细节（想深入再点）</summary>' +
         '<div class="detail-body">' + node.detail + '</div>';
@@ -620,6 +659,107 @@ window.Components = (function () {
     }
 
     return content;
+  }
+
+  function buildV4Knowledge(content, concept) {
+    const review = concept.review || {};
+    const status = review.status === "reviewed" ? "专业复核" : review.status === "source-checked" ? "来源已核对" : "待专业复核";
+    const head = el("div", "v4-card-status");
+    head.innerHTML = '<span class="v4-card-mark">V4 分层知识</span>' +
+      '<span class="v4-review ' + (review.status === "reviewed" || review.status === "source-checked" ? "ok" : "") + '">' + status +
+      (review.lastReviewed ? ' · ' + esc(review.lastReviewed) : '') + '</span>';
+    content.appendChild(head);
+
+    const levels = concept.levels || {};
+    const role = App.store.role();
+    const savedDepth = App.store.depth && App.store.depth();
+    const preferred = savedDepth || (role === "manage" ? "l0" : role === "tech" ? "l2" : "l1");
+    const available = ["l0", "l1", "l2", "l3"].filter(key => levels[key]);
+    const current = available.indexOf(preferred) >= 0 ? preferred : available[0];
+    const labels = { l0: ["L0", "30 秒"], l1: ["L1", "原理"], l2: ["L2", "取舍"], l3: ["L3", "实践"] };
+
+    const learning = el("section", "v4-learning");
+    const tabs = el("div", "v4-level-tabs");
+    tabs.setAttribute("role", "group");
+    tabs.setAttribute("aria-label", "知识深度");
+    const panel = el("div", "v4-level-panel");
+    panel.setAttribute("aria-live", "polite");
+
+    function selectLevel(key) {
+      tabs.querySelectorAll("button").forEach(btn => btn.setAttribute("aria-pressed", btn.dataset.level === key ? "true" : "false"));
+      const level = levels[key];
+      panel.innerHTML = '<div class="v4-level-kicker">' + esc((labels[key] || [key, ""])[0]) + ' · ' + esc(level.title || "分层理解") + '</div>' +
+        '<div class="v4-level-text">' + esc(level.text || "") + '</div>';
+      if (level.prompt) panel.appendChild(el("div", "v4-level-prompt", '<span>想一想</span>' + esc(level.prompt)));
+      if (App.store.setDepth) App.store.setDepth(key);
+    }
+
+    available.forEach(key => {
+      const btn = el("button", "v4-level-btn");
+      btn.type = "button";
+      btn.dataset.level = key;
+      btn.setAttribute("aria-pressed", key === current ? "true" : "false");
+      btn.innerHTML = '<b>' + labels[key][0] + '</b><small>' + labels[key][1] + '</small>';
+      btn.addEventListener("click", () => selectLevel(key));
+      tabs.appendChild(btn);
+    });
+    learning.appendChild(tabs);
+    learning.appendChild(panel);
+    content.appendChild(learning);
+    selectLevel(current);
+
+    if (concept.claimIds && concept.claimIds.length) {
+      content.appendChild(el("div", "card-section-label", "关键事实与口径"));
+      const claims = el("div", "v4-claims");
+      concept.claimIds.forEach(id => {
+        const claim = v4Claim(id);
+        if (!claim) return;
+        const item = el("div", "v4-claim");
+        item.innerHTML = '<div class="v4-claim-value">' + esc(claim.value) + '</div>' +
+          '<div class="v4-claim-context">' + esc(claim.context || "") + '</div>' +
+          '<div class="v4-claim-asof">口径：' + esc(claim.asOf || "稳定定义") +
+          (claim.maturity ? ' · ' + esc(claim.maturity) : '') + '</div>';
+        claims.appendChild(item);
+      });
+      content.appendChild(claims);
+    }
+
+    if (concept.tradeoffs && concept.tradeoffs.length) content.appendChild(buildV4Fold("工程取舍", concept.tradeoffs, "tradeoff"));
+    if (concept.misconceptions && concept.misconceptions.length) content.appendChild(buildV4Fold("常见误区", concept.misconceptions, "warning"));
+
+    const sourceIds = concept.sourceIds || [];
+    if (sourceIds.length) {
+      const details = el("details", "v4-sources");
+      details.innerHTML = '<summary><span class="chev">›</span>来源与成熟度 <span class="v4-source-count">' + sourceIds.length + '</span></summary>';
+      const list = el("div", "v4-source-list");
+      sourceIds.forEach(id => {
+        const source = v4Source(id);
+        if (!source) return;
+        const link = el("a", "v4-source-item");
+        link.href = source.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.innerHTML = '<span class="v4-source-type">' + esc(source.type || "来源") + '</span>' +
+          '<span class="v4-source-title">' + esc(source.title) + '</span>' +
+          '<span class="v4-source-date">' + esc(source.publisher || "") +
+          (source.publishedAt ? ' · ' + esc(source.publishedAt) : '') + '</span>';
+        list.appendChild(link);
+      });
+      details.appendChild(list);
+      if (review.ownerRole || review.nextReview) {
+        details.appendChild(el("div", "v4-review-note",
+          '<span>维护角色：' + esc(review.ownerRole || "待指定") + '</span>' +
+          (review.nextReview ? '<span>下次复核：' + esc(review.nextReview) + '</span>' : '')));
+      }
+      content.appendChild(details);
+    }
+  }
+
+  function buildV4Fold(title, items, tone) {
+    const details = el("details", "v4-fold " + (tone || ""));
+    details.innerHTML = '<summary><span class="chev">›</span>' + esc(title) + '<span class="v4-fold-count">' + items.length + '</span></summary>' +
+      '<ul>' + items.map(item => '<li>' + esc(item) + '</li>').join("") + '</ul>';
+    return details;
   }
 
   function resolveRelated(station, ref) {
@@ -659,7 +799,7 @@ window.Components = (function () {
       '<span class="quiz-badge-mini' + (already ? " done" : "") + '">' +
       (already
         ? '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 10.8 4.2 12.8l.7-4.3-3.1-3 4.3-.6z" fill="currentColor"/></svg>已获徽章'
-        : '答对两题得徽章') + '</span>';
+        : '全部答对得徽章') + '</span>';
     details.appendChild(summary);
 
     const body = el("div", "quiz-body");
@@ -667,7 +807,8 @@ window.Components = (function () {
 
     station.quiz.forEach((q, qi) => {
       const qBlock = el("div", "quiz-q");
-      qBlock.innerHTML = '<div class="q-text"><span class="q-idx">' + (qi + 1) + '.</span>' + q.q + '</div>';
+      qBlock.innerHTML = '<div class="q-text"><span class="q-idx">' + (qi + 1) + '.</span>' + q.q +
+        (q.kind ? '<span class="q-kind">' + esc(q.kind) + '</span>' : '') + '</div>';
       const opts = el("div", "quiz-options");
       const fb = el("div", "quiz-feedback");
       q.options.forEach((opt, oi) => {

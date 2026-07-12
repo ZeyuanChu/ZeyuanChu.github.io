@@ -47,6 +47,8 @@
     setQuality(v) { this.set("settings:quality", v === "low" ? "low" : "high"); },
     fontsize() { return this.get("settings:fontsize") || "normal"; },
     setFontsize(v) { this.set("settings:fontsize", v); },
+    depth() { return this.get("settings:depth") || ""; },
+    setDepth(v) { this.set("settings:depth", v); },
     role() { return this.get("role") || ""; },
     setRole(v) { this.set("role", v); },
     resume() { return this.get("resume") || ""; },
@@ -448,15 +450,27 @@
       (function walk(nodes, trail) {
         nodes.forEach(n => {
           const path = trail.concat(n.id);
+          const concept = DATA.v4 && DATA.v4.concepts && n.contentRef ? DATA.v4.concepts[n.contentRef] : null;
+          const v4Text = concept ? [
+            concept.canonicalName,
+            (concept.aliases || []).join(" "),
+            (concept.tags || []).join(" "),
+            ...Object.keys(concept.levels || {}).map(key => (concept.levels[key] && concept.levels[key].text) || ""),
+            ...(concept.tradeoffs || []),
+            ...(concept.misconceptions || [])
+          ].join(" ") : "";
           idx.push({ kind: "知识卡", label: n.name, sub: n.brief || (n.plain || "").slice(0, 20),
             hash: "#/s/" + s.id + "/" + path.join("/"), color: s.color,
-            text: (n.name + " " + (n.en || "") + " " + (n.brief || "") + " " + (n.plain || "") + " " + ((n.tags || []).join(" "))) });
+            text: (n.name + " " + (n.en || "") + " " + (n.brief || "") + " " + (n.plain || "") + " " + ((n.tags || []).join(" ")) + " " + v4Text) });
           if (n.children) walk(n.children, path);
         });
       })(s.nodes, []);
       if (s.advanced) s.advanced.nodes.forEach(n => {
+        const concept = DATA.v4 && DATA.v4.concepts && n.contentRef ? DATA.v4.concepts[n.contentRef] : null;
+        const conceptText = concept ? [concept.canonicalName, (concept.aliases || []).join(" "), (concept.tags || []).join(" "),
+          ...Object.keys(concept.levels || {}).map(key => (concept.levels[key] && concept.levels[key].text) || "")].join(" ") : "";
         idx.push({ kind: "进阶", label: n.name, sub: n.brief || "", hash: "#/s/" + s.id + "/adv/" + n.id, color: s.color,
-          text: n.name + " " + (n.brief || "") });
+          text: n.name + " " + (n.brief || "") + " " + conceptText });
       });
     });
     (DATA.glossary || []).forEach(g => idx.push({ kind: "术语", label: g.term, sub: g.plain, hash: "#/" + g.path, color: "var(--cyan)", text: g.term + " " + g.plain + " " + g.analogy }));
