@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>算力之旅 · 从一张显卡，到一朵云</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 跳到主内容（无障碍 skip-link） -->
+  <a class="skip-link" href="#app">跳到主内容</a>
+
+  <!-- ========================= 顶栏 ========================= -->
+  <header class="topbar" id="topbar">
+    <a class="brand" href="#/" aria-label="算力之旅 · 回到首页">
+      <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="6"  cy="6"  r="2.4"/>
+        <circle cx="14" cy="6"  r="2.4"/>
+        <circle cx="22" cy="6"  r="2.4"/>
+        <circle cx="6"  cy="14" r="2.4"/>
+        <circle cx="14" cy="14" r="2.4"/>
+        <circle cx="22" cy="14" r="2.4"/>
+        <circle cx="6"  cy="22" r="2.4"/>
+        <circle cx="14" cy="22" r="2.4"/>
+        <circle cx="22" cy="22" r="2.4"/>
+      </svg>
+      <span class="brand-name">算力之旅</span>
+    </a>
+
+    <!-- 地铁线导航（桌面端） -->
+    <nav class="metro" id="metro" aria-label="站点导航"></nav>
+
+    <!-- 窄屏下拉 -->
+    <div class="metro-select" id="metroSelect">
+      <button class="metro-select-btn" id="metroSelectBtn" aria-haspopup="listbox" aria-expanded="false">
+        <span id="metroSelectLabel">首页</span>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <ul class="metro-select-menu" id="metroSelectMenu" role="listbox" hidden></ul>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="topbar-search" id="searchBtn" aria-label="搜索（快捷键 ⌘K）">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span class="ts-label">搜索</span>
+        <kbd class="ts-kbd">⌘K</kbd>
+      </button>
+      <button class="badge-count" id="badgeCount" title="已获徽章" aria-label="徽章进度">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 10.8 4.2 12.8l.7-4.3-3.1-3 4.3-.6z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        <span id="badgeCountText">0/10</span>
+      </button>
+      <a class="btn-ghost" id="glossaryBtn" href="#/glossary">术语表</a>
+      <label class="presenter-toggle" title="讲解模式（投屏放大）">
+        <input type="checkbox" id="presenterToggle">
+        <span class="switch" aria-hidden="true"></span>
+        <span class="presenter-label">讲解</span>
+      </label>
+      <button class="icon-btn" id="settingsBtn" aria-label="设置" title="设置">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================= 主内容路由容器 ========================= -->
+  <main id="app" class="app" tabindex="-1"></main>
+
+  <!-- ========================= 知识卡侧栏（drawer） ========================= -->
+  <aside id="drawer" class="drawer" aria-hidden="true" aria-label="知识卡" role="dialog">
+    <div class="drawer-inner" id="drawerInner"></div>
+  </aside>
+
+  <!-- ========================= 浮层容器（结业卡等） ========================= -->
+  <div id="overlay" class="overlay" hidden></div>
+
+  <!-- 命令面板 / 搜索（⌘K） -->
+  <div id="palette" class="palette-scrim" hidden></div>
+
+  <!-- 设置面板 -->
+  <div id="settingsPanel" class="settings-scrim" hidden></div>
+
+  <!-- 全局 tooltip -->
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+  <!-- toast 容器 -->
+  <div id="toastHost" class="toast-host" aria-live="polite"></div>
+
+  <!-- 无障碍：全局播报 -->
+  <div id="ariaLive" class="sr-only" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/stages.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
