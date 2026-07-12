@@ -1,0 +1,100 @@
+/* ========================================================================
+   算力之旅 · Design Tokens V2（独立文件，便于换肤）
+   规格书 V2.0 第 5.2 章。语义化 token 体系 + 10 级中性色阶 + 高度/材质/光效。
+   —— 关键：V1.1 的旧 token 名（--panel、--line-2…）在文末统一 alias 到新语义
+      token，旧代码零改动即可继续工作，同时新代码走语义 token。
+   ======================================================================== */
+:root {
+  /* —— 中性色阶（单一色相拉 13 级，是"高级"的地基）—— */
+  --slate-950:#080D18; --slate-900:#0B1220; --slate-850:#0E1626; --slate-800:#141E33;
+  --slate-750:#1B2742; --slate-700:#26334E; --slate-600:#324364; --slate-500:#48597E;
+  --slate-400:#6B7C99; --slate-300:#8F9EBD; --slate-200:#A7B7D2; --slate-100:#CBD6EA; --slate-50:#E9F0FB;
+
+  /* —— 语义表面 —— */
+  --bg:            var(--slate-900);
+  --surface-1:     var(--slate-850);
+  --surface-2:     var(--slate-800);
+  --surface-3:     var(--slate-750);
+  --surface-glass: color-mix(in srgb, var(--slate-850) 72%, transparent);
+  --hairline:      var(--slate-700);
+  --hairline-2:    var(--slate-600);
+  --hairline-hi:   color-mix(in srgb, #ffffff 6%, transparent);
+
+  /* —— 文本 —— */
+  --text:   var(--slate-50);  --text-2: var(--slate-200);  --text-3: var(--slate-400);
+  --text-inv:#0A0F1C;
+
+  /* —— 品牌/功能色 —— */
+  --blue:#4C8DFF; --cyan:#2FD4E6; --violet:#A78BFA; --pink:#F472B6;
+  --indigo:#818CF8; --green:#34D399; --amber:#FBBF24; --red:#F87171; --lime:#A3E635;
+  --accent: var(--blue);
+  --accent-weak:  color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-line:  color-mix(in srgb, var(--accent) 45%, transparent);
+  --accent-text:  color-mix(in srgb, var(--accent) 85%, var(--slate-50));
+
+  /* —— 状态色 tint —— */
+  --ok:var(--green); --warn:var(--amber); --danger:var(--red); --info:var(--blue);
+
+  /* —— 间距阶梯（4px 基准）—— */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px; --sp-9:96px;
+
+  /* —— 圆角阶梯 —— */
+  --radius-xs:6px; --radius-s:10px; --radius-m:16px; --radius-l:24px; --radius-pill:999px;
+
+  /* —— 高度/阴影（外投影 + 顶部内高光 = 玻璃厚度）—— */
+  --elev-1: 0 1px 2px rgba(0,0,0,.30), inset 0 1px 0 var(--hairline-hi);
+  --elev-2: 0 6px 16px rgba(0,0,0,.35), inset 0 1px 0 var(--hairline-hi);
+  --elev-3: 0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 var(--hairline-hi);
+  --glow-accent: 0 0 0 1px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 33%, transparent);
+
+  /* —— 字体 token（离线环境：系统字体栈；数字等宽 tabular）—— */
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+  --fs-11:11px; --fs-12:12px; --fs-13:13px; --fs-15:15px; --fs-17:17px; --fs-20:20px; --fs-24:24px; --fs-30:30px;
+  --fs-display: clamp(34px, 5vw, 52px);
+  --lh-tight:1.3; --lh-body:1.75; --lh-plain:1.85;
+
+  /* —— 动效 token —— */
+  --dur-1:120ms; --dur-2:180ms; --dur-3:240ms; --dur-4:320ms; --dur-5:480ms;
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+
+  /* —— z-index（集中管理）—— */
+  --z-stage:1; --z-drawer:90; --z-topbar:100; --z-menu:120; --z-toast:180; --z-overlay:200; --z-tooltip:300; --z-palette:320;
+
+  /* —— 兼容几何（V1.1）—— */
+  --shadow-card: var(--elev-2);
+  --topbar-h: 60px; --drawer-w: 440px;
+
+  /* ============ V1.1 旧名 alias（勿删：老代码/SVG 仍引用）============ */
+  --bg-2:   var(--surface-1);
+  --panel:  var(--surface-2);
+  --panel-2:var(--surface-3);
+  --line:   var(--hairline);
+  --line-2: var(--hairline-2);
+
+  /* 字号放大档（设置面板：字号=大）*/
+  --fs-scale: 1;
+}
+
+/* —— 字号放大（设置：大）—— */
+:root[data-fontsize="large"] { font-size: 16.5px; }
+
+/* —— 可选亮色主题（设置：亮 / 跟随系统）—— */
+:root[data-theme="light"] {
+  --slate-950:#F2F5FB; --slate-900:#F7F9FD; --slate-850:#EEF2F9; --slate-800:#FFFFFF;
+  --slate-750:#F1F4FA; --slate-700:#D9E0EC; --slate-600:#C2CCDD; --slate-500:#9AA8C0;
+  --slate-400:#6B7891; --slate-300:#55627A; --slate-200:#3C475C; --slate-100:#2A3244; --slate-50:#141B29;
+  --text-inv:#F7F9FD;
+  --hairline-hi: color-mix(in srgb, #ffffff 70%, transparent);
+  --surface-glass: color-mix(in srgb, #ffffff 78%, transparent);
+  --elev-1: 0 1px 2px rgba(30,45,80,.10), inset 0 1px 0 var(--hairline-hi);
+  --elev-2: 0 6px 16px rgba(30,45,80,.12), inset 0 1px 0 var(--hairline-hi);
+  --elev-3: 0 16px 40px rgba(30,45,80,.18), inset 0 1px 0 var(--hairline-hi);
+}
+
+/* —— 高对比覆盖 —— */
+@media (prefers-contrast: more) {
+  :root { --hairline: var(--slate-600); --text-3: var(--slate-300); }
+}
