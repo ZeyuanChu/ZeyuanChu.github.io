@@ -117,12 +117,13 @@
   }
 
   /* ------------------------------ 路由 ------------------------------ */
-  const KNOWN = { glossary: 1, scenarios: 1, graph: 1, cost: 1 };
+  const KNOWN = { glossary: 1, scenarios: 1, graph: 1, cost: 1, atlas: 1, labs: 1 };
   function parseHash() {
     let h = location.hash.replace(/^#/, "");
     if (!h || h === "/") return { route: "home" };
     const parts = h.split("/").filter(Boolean);
     if (KNOWN[parts[0]] && parts.length === 1) return { route: parts[0] };
+    if (parts[0] === "lab") return parts[1] ? { route: "lab", labId: parts[1] } : { route: "labs" };
     if (parts[0] === "s" && parts[1]) {
       if (!findStation(parts[1])) return { route: "notfound" };
       return { route: "station", stationId: parts[1], drawerPath: parts.slice(2) };
@@ -177,6 +178,9 @@
     else if (route === "scenarios") appEl.appendChild(Components.buildScenarios());
     else if (route === "graph") appEl.appendChild(Components.buildGraph());
     else if (route === "cost") appEl.appendChild(Components.buildCost());
+    else if (route === "atlas") appEl.appendChild(LabsUI.buildAtlas());
+    else if (route === "labs") appEl.appendChild(LabsUI.buildLabsIndex());
+    else if (route === "lab") appEl.appendChild(LabsUI.buildLab(App.state.labId));
     else appEl.appendChild(Components.buildNotFound());
     window.scrollTo(0, 0);
   }
@@ -185,6 +189,7 @@
     hideTooltip();
     const parsed = parseHash();
     App.state.route = parsed.route;
+    App.state.labId = parsed.labId || null;
 
     if (parsed.route !== "station") {
       simplePage(parsed.route);
@@ -337,7 +342,7 @@
       const s = findStation(App.state.stationId);
       metroSelectLabel.textContent = "第 " + s.num + " 站 · " + s.name;
     } else {
-      const map = { glossary: "术语表", scenarios: "场景库", graph: "知识图谱", cost: "成本估算", notfound: "走岔了" };
+      const map = { glossary: "术语表", scenarios: "场景库", graph: "知识图谱", atlas: "图谱 Atlas", labs: "实验室", lab: "实验室", cost: "成本估算", notfound: "走岔了" };
       metroSelectLabel.textContent = map[App.state.route] || "首页";
     }
   }

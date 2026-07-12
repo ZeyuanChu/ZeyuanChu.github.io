@@ -591,7 +591,7 @@ window.DATA = {
       visual: "model-radial",
       icon: "model",
       est: 6,
-      tldr: "一句话看懂：模型如何被训练出来、部署上线、并且跑得又快又省——这一站是“哦，原来里面还有”的样板间。",
+      tldr: "一句话看懂：模型如何被训练出来、部署上线、并且跑得又快又省——这一站是“哦，原来里面还有”的典型代表。",
       advanced: {
         title: "进阶：现代模型版图",
         nodes: [
@@ -602,7 +602,7 @@ window.DATA = {
           { id: "alignment", name: "对齐与安全评测", brief: "让模型好用、可控、安全", plain: "模型光能力达标还不够，还得“守规矩”。对齐让它符合人类偏好与安全底线，安全评测专门测它会不会被诱导说出问题内容。对外服务的模型，这一关不能省。", analogy: "新司机不仅要会开车（能力），还要考交规、过路考（对齐与安全），双证齐全才敢载客。" }
         ]
       },
-      intro: "硬件与平台就绪，现在回答最终的问题：模型如何被训练出来、部署上线、并且跑得又快又省。点开每一层，你会发现里面别有洞天——这一站，就是“哦，原来里面还有”的样板间。",
+      intro: "硬件与平台就绪，现在回答最终的问题：模型如何被训练出来、部署上线、并且跑得又快又省。点开每一层，你会发现里面别有洞天——这一站，就是“哦，原来里面还有”的典型代表。",
       nodes: [
         {
           id: "training",
@@ -1067,6 +1067,62 @@ window.DATA = {
       need: "想用公司内部数据微调一个模型，又怕数据泄露。",
       path: ["s/model/finetune/lora", "s/data/adv/governance", "s/delivery/private"],
       takeaway: "小成本用 LoRA 微调；数据走治理与脱敏、部署走专有云不出门，既懂行话又安全。"
+    },
+    {
+      id: "rag-kb",
+      title: "RAG 企业知识库：答得准还能溯源",
+      icon: "scenario",
+      need: "我们有大量内部文档，想让模型基于它们回答并给出引用，而不是瞎编。",
+      path: ["s/data/vectordb", "s/data/pipeline", "s/model/inference/metrics", "s/delivery/private"],
+      takeaway: "RAG = 切块→检索→重排→带引用生成→评测，每一环都要实测；企业数据敏感就走专有云不出门，用召回/精度/引用率验收，别只看“检索到没”。"
+    },
+    {
+      id: "longctx-lowlat",
+      title: "长上下文 + 低延迟推理",
+      icon: "scenario",
+      need: "客户要一次喂很长的上下文，还要求首字快、每字稳。",
+      path: ["s/model/adv/longctx", "s/model/inference/kvcache", "s/model/inference/pd", "s/model/inference/batching"],
+      takeaway: "长上下文让 KV Cache 膨胀吃显存；用 Paged KV + 前缀复用省显存，PD 分离让长文档读题不拖累别人写答案，再用连续批处理提吞吐——盯 TTFT/TPOT。"
+    },
+    {
+      id: "api-vs-build",
+      title: "用 API 还是自建：账怎么算",
+      icon: "coin",
+      need: "同样的活，直接买 API 便宜还是自己买卡建集群便宜？",
+      path: ["s/delivery/ondemand", "s/token/pricing/tcochain", "s/ops/monitor/utilization", "s/delivery/idc"],
+      takeaway: "先按 TCO 账链算自建的每百万 Token 成本，和 API 单价比出盈亏平衡利用率：用量小或不稳先用 API，规模大且利用率稳再自建（实验室里可直接试算）。"
+    },
+    {
+      id: "domestic-migrate",
+      title: "迁到国产算力：先想清退路",
+      icon: "scenario",
+      need: "出于供应与合规，要把业务迁到国产加速卡，怕迁完被套牢。",
+      path: ["s/delivery/adv/migration", "s/platform/driver/operator", "s/model/inference/framework", "s/gpu/types"],
+      takeaway: "迁移成本在芯片、互联、算子、框架、调度与模型适配六层；先核对算子/框架兼容矩阵与推理框架支持，选型就留退出路径与回退方案，别只看单卡跑分。"
+    },
+    {
+      id: "traffic-spike",
+      title: "突发流量：高峰顶得住",
+      icon: "spark",
+      need: "平时用量平稳，但偶尔有活动带来数倍流量，不想为峰值常年养一堆闲卡。",
+      path: ["s/delivery/hybrid", "s/model/inference/batching", "s/ops/capacity", "s/ops/alerts"],
+      takeaway: "平时自有集群顶基线，高峰用混合模式弹性借公有云；连续批处理提瞬时吞吐，按 SLO 与容量水位设扩容/限流/降级，别让峰值把 Error Budget 烧光。"
+    },
+    {
+      id: "train-recover",
+      title: "千卡训练掉卡：半小时救回来",
+      icon: "scenario",
+      need: "几千张卡跑一个大训练，半夜掉了一张卡，怎么把损失压到最小？",
+      path: ["s/data/checkpoint", "s/data/checkpoint/ckptcost", "s/model/training/ckptrecover", "s/ops/alerts/dropnight"],
+      takeaway: "按 RPO/RTO 定存档间隔、用异步 Checkpoint 少停顿；掉卡后自动告警→隔离→备机顶上→从最近存档恢复，损失就只有一个存档间隔——恢复能力必须靠演练验证。"
+    },
+    {
+      id: "multitenant-sec",
+      title: "多租户共用一套集群：安全怎么保",
+      icon: "shield",
+      need: "一套集群同时服务很多客户，怎么保证互相看不见数据、又不互相拖垮。",
+      path: ["s/token/multitenant", "s/platform/platform/tenant", "s/data/adv/governance", "s/network/mgmtnet"],
+      takeaway: "多租户不只是配额：要有安全隔离（你看不见我的数据）、限流防吵闹邻居、计量可审计；数据按治理分级脱敏，管理面走独立带外网。"
     }
   ],
 

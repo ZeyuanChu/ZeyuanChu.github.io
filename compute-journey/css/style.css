@@ -1379,3 +1379,193 @@ body.presenter .card-figures { display: none !important; }
 :root[data-quality="low"] .noise-layer { display: none !important; }
 :root[data-quality="low"] .optional-glow,
 :root[data-quality="low"] .optional-glow * { filter: none !important; }
+
+/* ========================================================================
+   =====================  V4 · Atlas 图谱 + 实验室  =====================
+   ======================================================================== */
+
+/* ---- Atlas ---- */
+.atlas-page { max-width: 1240px; margin: 0 auto; padding: 32px 24px 80px; }
+.atlas-page h2 { font-size: var(--fs-30, 30px); margin-bottom: 6px; }
+.atlas-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 10px; }
+.atlas-legend .al-title { font-size: 12.5px; color: var(--text-3); margin-right: 4px; }
+.al-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-pill); padding: 4px 10px; }
+.al-chip .al-swatch { width: 12px; height: 3px; border-radius: 2px; }
+.al-chip:hover { border-color: var(--hairline-2); color: var(--text); }
+.al-chip.on { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 1px var(--accent); }
+.al-reset { color: var(--text-3); }
+.atlas-holder { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-l);
+  box-shadow: var(--elev-1); overflow: auto; max-height: 74vh; }
+.atlas-svg { width: 100%; min-width: 1100px; height: auto; display: block; }
+.atlas-layer-name { font-size: 15px; font-weight: 700; fill: var(--text); }
+.atlas-layer-sub { font-size: 11px; fill: var(--text-3); }
+.atlas-station-head { font-size: 11px; font-weight: 700; }
+.atlas-node { cursor: pointer; }
+.atlas-node rect:first-of-type { transition: filter .12s; }
+.atlas-node:hover rect:first-of-type, .atlas-node:focus-visible rect:first-of-type { filter: drop-shadow(0 0 6px var(--accent)); }
+.atlas-node:focus-visible { outline: none; }
+.atlas-node-label { font-size: 11px; fill: var(--text); pointer-events: none; }
+.atlas-edge { transition: opacity .15s, stroke-width .15s; }
+
+/* ---- 实验室索引 ---- */
+.labs-index { max-width: 1000px; margin: 0 auto; padding: 40px 24px 80px; }
+.labs-index h2 { font-size: var(--fs-30, 30px); margin-bottom: 6px; }
+.labs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px; }
+.lab-card { background: var(--surface-2); border: 1px solid var(--hairline); border-left: 3px solid var(--lc, var(--accent));
+  border-radius: var(--radius-m); padding: 18px 20px; cursor: pointer; box-shadow: var(--elev-1); transition: transform .18s, border-color .18s; }
+.lab-card:hover { transform: translateY(-2px); border-color: var(--lc, var(--accent)); }
+.lab-card .lc-tag { font-size: 11px; color: var(--lc, var(--accent)); font-weight: 700; letter-spacing: .5px; }
+.lab-card .lc-name { font-size: 17px; font-weight: 700; margin: 6px 0 8px; }
+.lab-card .lc-desc { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+.lab-card .lc-go { font-size: 12.5px; color: var(--lc, var(--accent)); margin-top: 12px; }
+
+/* ---- 实验室通用 ---- */
+.lab-page { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
+.lab-head { margin-bottom: 18px; }
+.lab-head h2 { font-size: 24px; margin: 6px 0 6px; }
+.lab-back { font-size: 13px; color: var(--text-3); }
+.lab-back:hover { color: var(--accent-text); }
+.lab-grid2 { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+.lab-controls, .lab-output { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-m);
+  padding: 18px; box-shadow: var(--elev-1); }
+.lab-card-title, .lab-sub-title { font-size: 12.5px; font-weight: 700; color: var(--text-3); letter-spacing: .5px; margin: 4px 0 12px; }
+.lab-sub-title { margin-top: 16px; color: var(--accent-text); }
+.lab-input { margin-bottom: 14px; }
+.lab-input label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-2); margin-bottom: 7px; }
+.lab-input .slider-val { color: var(--accent-text); font-size: 12.5px; }
+.lab-input input[type=range], .lab-controls input[type=range] { width: 100%; -webkit-appearance: none; appearance: none; height: 5px; border-radius: 3px; background: var(--surface-3); outline: none; }
+.lab-input input[type=range]::-webkit-slider-thumb, .lab-controls input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface-2); cursor: pointer; }
+.lab-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); margin: 8px 0; cursor: pointer; }
+.lab-disclaimer { margin-top: 16px; font-size: 12px; color: var(--text-3); line-height: 1.7; padding: 12px 14px;
+  background: var(--surface-1); border-left: 2px solid var(--amber); border-radius: var(--radius-s); }
+.lab-disclaimer b { color: var(--text-2); }
+.lab-links { margin-top: 16px; font-size: 12.5px; color: var(--text-3); }
+.lab-links a { color: var(--accent-text); } .lab-links a:hover { text-decoration: underline; }
+.lab-controls .btn-secondary { width: 100%; justify-content: flex-start; margin-bottom: 8px; height: 34px; font-size: 13px; }
+.muted { color: var(--text-3); font-size: 13px; }
+
+/* Lab1 显存 */
+.lab-valid { font-size: 13px; padding: 10px 12px; border-radius: var(--radius-s); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.lab-valid .v-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.lab-valid.ok { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); } .lab-valid.ok .v-dot { background: var(--green); }
+.lab-valid.warn { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber); } .lab-valid.warn .v-dot { background: var(--amber); }
+.lab-valid.bad { background: color-mix(in srgb, var(--red) 14%, transparent); color: #fca5a5; } .lab-valid.bad .v-dot { background: var(--red); }
+.mem-bar { display: flex; height: 26px; border-radius: 7px; overflow: hidden; background: var(--surface-1); border: 1px solid var(--hairline); }
+.mem-bar .mb-seg { height: 100%; } .mem-bar .mb-free { background: repeating-linear-gradient(45deg, var(--surface-3), var(--surface-3) 6px, transparent 6px, transparent 12px); }
+.mem-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; font-size: 12px; color: var(--text-2); }
+.ml-item { display: inline-flex; align-items: center; gap: 5px; } .ml-dot { width: 9px; height: 9px; border-radius: 2px; }
+.mem-total { font-size: 13px; color: var(--text-2); margin-bottom: 6px; } .mem-total b { color: var(--text); }
+.comm-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.comm-table th, .comm-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+.comm-table th { color: var(--accent-text); font-weight: 700; } .comm-table td { color: var(--text-2); }
+
+/* Lab2 KV */
+.kv-stats { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.kv-stat { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); }
+.kv-stat b { color: var(--text); }
+.kv-flash { margin-top: 8px; font-size: 12px; color: var(--amber); }
+.kv-pool { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin-bottom: 14px; }
+.kv-block { aspect-ratio: 1; border-radius: 4px; background: var(--surface-1); border: 1px solid var(--hairline); transition: background .15s; }
+.kv-block.used { border-color: transparent; }
+.kv-reqs { display: flex; flex-wrap: wrap; gap: 6px; }
+.kv-req { font-size: 11.5px; color: var(--text-2); background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-pill); padding: 3px 10px; }
+.kv-req.fin { opacity: .5; text-decoration: line-through; }
+
+/* Lab3 成本 */
+.cost-waterfall { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.wf-row { display: grid; grid-template-columns: 92px 1fr 88px; align-items: center; gap: 10px; font-size: 12.5px; }
+.wf-label { color: var(--text-2); } .wf-val { text-align: right; color: var(--text); }
+.wf-bar { height: 16px; background: var(--surface-1); border-radius: 5px; overflow: hidden; } .wf-bar span { display: block; height: 100%; }
+.wf-total { font-weight: 700; border-top: 1px solid var(--hairline); padding-top: 8px; } .wf-total .wf-val { color: var(--accent-text); }
+.cost-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+.lab-kpi { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-s); padding: 12px 14px; }
+.lab-kpi.ok { border-color: color-mix(in srgb, var(--green) 45%, var(--hairline)); }
+.lab-kpi.warn { border-color: color-mix(in srgb, var(--amber) 45%, var(--hairline)); }
+.lab-kpi .k-label { display: block; font-size: 11.5px; color: var(--text-3); margin-bottom: 5px; }
+.lab-kpi .k-val { font-size: 19px; font-weight: 700; color: var(--text); }
+.be-box { border-radius: var(--radius-s); padding: 14px 16px; }
+.be-box.ok { background: color-mix(in srgb, var(--green) 12%, transparent); }
+.be-box.warn { background: color-mix(in srgb, var(--amber) 12%, transparent); }
+.be-title { font-weight: 700; margin-bottom: 6px; } .be-detail { font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+.be-warn { font-size: 12px; color: var(--text-3); line-height: 1.7; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hairline); }
+.be-warn b { color: var(--amber); }
+
+/* Lab4 SLO */
+.slo-alert { font-size: 13px; font-weight: 600; padding: 11px 14px; border-radius: var(--radius-s); margin-bottom: 16px; }
+.slo-alert.ok { background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--green); }
+.slo-alert.warn { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber); }
+.slo-alert.page { background: color-mix(in srgb, var(--red) 16%, transparent); color: #fca5a5; }
+.slo-gauges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+.slo-gauge { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-s); padding: 12px; text-align: center; }
+.slo-gauge.bad { border-color: color-mix(in srgb, var(--red) 50%, var(--hairline)); }
+.slo-gauge.warn { border-color: color-mix(in srgb, var(--amber) 50%, var(--hairline)); }
+.sg-val { font-size: 18px; font-weight: 700; color: var(--text); } .sg-label { font-size: 11px; color: var(--text-3); margin: 3px 0 7px; }
+.sg-bar { height: 5px; background: var(--surface-3); border-radius: 3px; overflow: hidden; } .sg-bar span { display: block; height: 100%; background: var(--accent); }
+.slo-gauge.bad .sg-bar span { background: var(--red); } .slo-gauge.warn .sg-bar span { background: var(--amber); }
+.budget-bar { height: 20px; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: 6px; overflow: hidden; }
+.budget-bar span { display: block; height: 100%; transition: width .4s; }
+.budget-bar span.ok { background: var(--green); } .budget-bar span.warn { background: var(--amber); } .budget-bar span.bad { background: var(--red); }
+.budget-meta { font-size: 12px; color: var(--text-2); margin: 8px 0 4px; } .budget-meta b { color: var(--text); }
+.slo-trace { display: flex; flex-wrap: wrap; gap: 6px; }
+.fault-tag { font-size: 11.5px; color: #fca5a5; background: color-mix(in srgb, var(--red) 14%, transparent); border-radius: var(--radius-pill); padding: 3px 10px; }
+.fault-btn.on { border-color: var(--red); color: #fca5a5; }
+
+@media (max-width: 900px) {
+  .lab-grid2 { grid-template-columns: 1fr; }
+  .labs-grid { grid-template-columns: 1fr; }
+  .slo-gauges { grid-template-columns: repeat(2, 1fr); }
+  .cost-kpis { grid-template-columns: 1fr; }
+}
+
+/* ========================================================================
+   ============  术语表(concepts)样式 + 导航/移动端打磨  ============
+   ======================================================================== */
+
+/* 术语表：由概念库生成 */
+.gl-count { font-size: 12px; color: var(--text-3); margin: -10px 0 16px; }
+.gl-card .gl-term { display: flex; flex-direction: column; gap: 3px; }
+.gl-card .gl-alias { font-size: 11.5px; font-weight: 400; color: var(--text-3); font-family: var(--font-mono); letter-spacing: .2px; }
+.gl-card .gl-domain { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;
+  color: var(--text-2); background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-pill); padding: 3px 10px; }
+.gl-card .gl-domain .gl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gc, var(--accent)); }
+.gl-card:hover { border-color: var(--gc, var(--blue)) !important; }
+
+/* 让所有卡片网格在窄屏不再强行溢出（min() 保护） */
+.gl-grid { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+.scenario-grid { grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); }
+.labs-grid, .station-grid { min-width: 0; }
+.atlas-page, .lab-page, .labs-index, .scenarios-page, .glossary-page, .graph-page, .cost-page, .home { min-width: 0; }
+
+/* ---- 导航打磨：地铁线更清晰的当前站 + 顶栏在中屏更紧凑 ---- */
+@media (max-width: 1120px) {
+  .topbar { gap: 12px; }
+  .topbar-search .ts-label { display: none; }
+}
+
+/* ---- 移动端(≤640)：底部站点导航 + 紧凑顶栏，320px 不溢出 ---- */
+@media (max-width: 640px) {
+  .lab-page, .labs-index, .scenarios-page, .glossary-page, .atlas-page, .graph-page, .cost-page { padding-left: 16px; padding-right: 16px; }
+  .lab-grid2 { grid-template-columns: 1fr; }
+  .slo-gauges { grid-template-columns: repeat(2, 1fr); }
+  .cost-kpis { grid-template-columns: 1fr; }
+  .labs-grid { grid-template-columns: 1fr; }
+  .atlas-legend { gap: 6px; } .atlas-legend .al-title { width: 100%; margin-bottom: 2px; }
+  .kv-pool { grid-template-columns: repeat(8, 1fr); }
+  .topbar-search .ts-kbd { display: none; }
+  .badge-count span { font-size: 12px; }
+  .page-sub, .gl-sub { font-size: 13px; }
+  h2 { font-size: 22px !important; }
+  /* 底部站点快捷条：移动端始终可跳站 */
+  .metro-select { max-width: 62vw; }
+  .metro-select-btn { width: 100%; }
+}
+@media (max-width: 380px) {
+  .topbar { gap: 8px; padding: 0 8px; }
+  .presenter-toggle { display: none; }         /* 讲解开关移动端进设置面板即可 */
+  .badge-count { padding: 6px 8px; }
+  .cost-kpis, .lab-kpi { min-width: 0; }
+  .kv-pool { grid-template-columns: repeat(8, 1fr); gap: 3px; }
+  .wf-row { grid-template-columns: 74px 1fr 66px; }
+  .lab-head h2 { font-size: 20px; }
+}

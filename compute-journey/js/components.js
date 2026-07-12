@@ -111,9 +111,10 @@ window.Components = (function () {
     const resumeHash = App.store.resume();
     const quick = el("div", "quicknav");
     const items = [
-      { hash: "#/glossary", ic: "search", label: "术语表" },
+      { hash: "#/atlas", ic: "graph", label: "图谱 Atlas" },
+      { hash: "#/labs", ic: "cost", label: "实验室" },
       { hash: "#/scenarios", ic: "scenario", label: "场景库" },
-      { hash: "#/graph", ic: "graph", label: "知识图谱" },
+      { hash: "#/glossary", ic: "search", label: "术语表" },
       { hash: "#/cost", ic: "cost", label: "成本估算" }
     ];
     if (resumeHash && resumeHash !== "#/") items.unshift({ hash: resumeHash, ic: "play", label: "继续上次", primary: true });
@@ -131,7 +132,7 @@ window.Components = (function () {
     wrap.appendChild(grid);
 
     const footerText = DATA.v4
-      ? "内容版本 " + DATA.v4.meta.version + " · 前三站 V4 样板已接入来源、口径与复核记录 · 其余站点持续迁移中"
+      ? "内容版本 " + DATA.v4.meta.version + " · 全站知识已接入来源、口径、成熟度与复核记录"
       : "内部学习资料 · 内容口径以工程团队评审为准 · 会过时的数字集中登记于「数字保鲜表」";
     wrap.appendChild(el("div", "home-footer", footerText));
     return wrap;
@@ -147,8 +148,7 @@ window.Components = (function () {
     card.innerHTML =
       '<div class="sc-top"><div class="sc-num">' + String(s.num).padStart(2, "0") + '</div>' +
         '<div class="sc-ring">' + ringSVG(prog.frac, 34) + '</div></div>' +
-      '<div class="sc-name">' + stationIcon(s, "sc-ic") + s.name +
-        (s.contentV4 ? '<span class="sc-v4">V4 样板</span>' : '') + '</div>' +
+      '<div class="sc-name">' + stationIcon(s, "sc-ic") + s.name + '</div>' +
       '<div class="sc-sub">' + s.sub + '</div>' +
       '<div class="sc-line">' + firstSentence(s.intro).replace(/【[^】]*】/g, "") + '</div>' +
       '<div class="sc-foot"><span class="sc-status ' + statusCls + '"><span class="dot"></span>' + statusTxt + '</span>' +
@@ -483,9 +483,9 @@ window.Components = (function () {
     const box = el("section", "station-v4");
     const sourceCount = (profile.sourceIds || []).length;
     box.innerHTML =
-      '<div class="station-v4-head"><span class="station-v4-badge">V4 样板</span>' +
-        '<span class="station-v4-meta">L0–L3 · ' + sourceCount + ' 个一手来源</span></div>' +
-      '<div class="station-v4-title">' + esc(profile.focus || "分层知识样板") + '</div>';
+      '<div class="station-v4-head"><span class="station-v4-badge">L0–L3</span>' +
+        '<span class="station-v4-meta">分层知识 · ' + sourceCount + ' 个一手来源</span></div>' +
+      '<div class="station-v4-title">' + esc(profile.focus || "分层知识") + '</div>';
     if (profile.learningObjectives && profile.learningObjectives.length) {
       const details = el("details", "station-v4-objectives");
       details.innerHTML = '<summary><span class="chev">›</span>本站学完能做什么</summary>' +
@@ -665,7 +665,7 @@ window.Components = (function () {
     const review = concept.review || {};
     const status = review.status === "reviewed" ? "专业复核" : review.status === "source-checked" ? "来源已核对" : "待专业复核";
     const head = el("div", "v4-card-status");
-    head.innerHTML = '<span class="v4-card-mark">V4 分层知识</span>' +
+    head.innerHTML = '<span class="v4-card-mark">L0–L3 分层知识</span>' +
       '<span class="v4-review ' + (review.status === "reviewed" || review.status === "source-checked" ? "ok" : "") + '">' + status +
       (review.lastReviewed ? ' · ' + esc(review.lastReviewed) : '') + '</span>';
     content.appendChild(head);
@@ -849,27 +849,58 @@ window.Components = (function () {
   }
 
   /* ============================ 术语表 ============================ */
+  // 术语表由 canonical concepts 自动生成（单一定义源，V4）；无 v4 时回退旧表
+  function glossaryItems() {
+    const v4 = DATA.v4;
+    if (v4 && v4.concepts) {
+      const routeMap = {}, stMap = {};
+      Object.values(v4.legacyPlacements || {}).forEach(p => {
+        if (p.kind === "concept" && p.conceptId && !routeMap[p.conceptId]) {
+          routeMap[p.conceptId] = p.legacyRoute || ("#/s/" + p.stationId + "/" + (p.legacyPath || []).join("/"));
+          stMap[p.conceptId] = p.stationId;
+        }
+      });
+      const order = DATA.stations.map(s => s.id);
+      return Object.values(v4.concepts).map(c => {
+        const l0 = c.levels && c.levels.l0 && c.levels.l0.text || "";
+        return {
+          term: c.canonicalName, aliases: (c.aliases || []).slice(0, 4), plain: l0,
+          station: stMap[c.id], hash: routeMap[c.id],
+          hay: (c.canonicalName + " " + (c.aliases || []).join(" ") + " " + (c.tags || []).join(" ") + " " + l0).toLowerCase()
+        };
+      }).filter(x => x.hash).sort((a, b) => order.indexOf(a.station) - order.indexOf(b.station));
+    }
+    return (DATA.glossary || []).map(g => ({ term: g.term, plain: g.plain, analogy: g.analogy, hash: "#/" + g.path, hay: (g.term + " " + g.plain + " " + g.analogy).toLowerCase() }));
+  }
+
   function buildGlossary() {
     const wrap = el("div", "glossary-page");
-    wrap.innerHTML = '<h2>术语表</h2><div class="gl-sub">术语只作标签，解释一律人话＋类比。点击词条跳到对应知识卡。</div>' +
-      '<input class="gl-search" id="glSearch" type="search" placeholder="搜索术语或解释…" aria-label="搜索术语">';
+    const items = glossaryItems();
+    const fromV4 = !!(DATA.v4 && DATA.v4.concepts);
+    wrap.innerHTML = '<h2>术语表</h2><div class="gl-sub">' +
+      (fromV4 ? '全部 <b>' + items.length + '</b> 个术语由规范概念库<b>自动生成</b>（单一定义源，不再维护第二份定义）。点词条打开完整 L0–L3 知识卡。' : '术语只作标签，解释一律人话＋类比。点击词条跳到对应知识卡。') + '</div>' +
+      '<input class="gl-search" id="glSearch" type="search" placeholder="搜索术语 / 别名 / 解释…" aria-label="搜索术语">' +
+      '<div class="gl-count" id="glCount"></div>';
     const grid = el("div", "gl-grid");
     wrap.appendChild(grid);
 
     function render(filter) {
       grid.innerHTML = "";
       const f = (filter || "").trim().toLowerCase();
-      const items = DATA.glossary.filter(g => !f || (g.term + " " + g.plain + " " + g.analogy).toLowerCase().indexOf(f) >= 0);
-      if (!items.length) { grid.appendChild(el("div", "gl-empty", "没有匹配的术语")); return; }
-      items.forEach(g => {
+      const list = items.filter(g => !f || g.hay.indexOf(f) >= 0);
+      const cnt = wrap.querySelector("#glCount"); if (cnt) cnt.textContent = list.length + " / " + items.length + " 个术语";
+      if (!list.length) { grid.appendChild(el("div", "gl-empty", "没有匹配的术语")); return; }
+      list.forEach(g => {
+        const st = g.station && DATA.stations.find(s => s.id === g.station);
         const card = el("div", "gl-card");
-        card.innerHTML = '<div class="gl-term">' + g.term + '</div>' +
-          '<div class="gl-plain">' + g.plain + '</div>' +
-          '<div class="gl-analogy">打个比方：' + g.analogy + '</div>';
-        card.setAttribute("role", "link");
-        card.setAttribute("tabindex", "0");
+        card.innerHTML = '<div class="gl-term">' + esc(g.term) +
+          (g.aliases && g.aliases.length ? '<span class="gl-alias">' + esc(g.aliases.join(" · ")) + '</span>' : '') + '</div>' +
+          '<div class="gl-plain">' + esc(g.plain) + '</div>' +
+          (st ? '<div class="gl-domain" style="--gc:' + st.color + '"><span class="gl-dot"></span>' + esc(st.name) + '</div>'
+              : (g.analogy ? '<div class="gl-analogy">打个比方：' + esc(g.analogy) + '</div>' : ''));
+        card.setAttribute("role", "link"); card.setAttribute("tabindex", "0");
         card.setAttribute("aria-label", g.term + "：" + g.plain);
-        const goPath = () => App.go("#/" + g.path);
+        const goPath = () => App.go(g.hash);
         card.addEventListener("click", goPath);
         card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goPath(); } });
         grid.appendChild(card);
