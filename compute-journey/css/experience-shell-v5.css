@@ -1,0 +1,117 @@
+/* ========================================================================
+   算力之旅 · Experience Shell V5
+   抽屉模态状态与 390px 顶栏收敛。
+   由 index.html 在 style.css 之后接入；本文件不改变站点工作台业务逻辑。
+   ======================================================================== */
+
+body.drawer-modal-open { overflow: hidden; }
+
+body.drawer-modal-open::before {
+  position: fixed;
+  inset: var(--topbar-h) 0 0;
+  z-index: 80;
+  content: "";
+  background: rgba(3, 8, 17, .58);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.drawer[aria-modal="true"] { z-index: 95; }
+
+#app[inert],
+#topbar[inert] {
+  user-select: none;
+  pointer-events: none;
+}
+
+.drawer[aria-modal="true"] .card-title:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+@media (max-width: 900px) {
+  .drawer[aria-modal="true"] .drawer-inner { padding-top: 26px; }
+  .drawer[aria-modal="true"] .drawer-inner::before {
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    width: 42px;
+    height: 4px;
+    content: "";
+    border-radius: var(--radius-pill);
+    background: var(--line-2);
+    transform: translateX(-50%);
+  }
+}
+
+/* 390px 及以下只保留：站点选择、搜索、设置/更多。 */
+@media (max-width: 480px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    padding-inline: 8px;
+  }
+
+  .topbar > .brand,
+  .topbar-actions > .badge-count,
+  .topbar-actions > .btn-ghost,
+  .topbar-actions > .presenter-toggle {
+    display: none !important;
+  }
+
+  .metro-select {
+    display: flex;
+    justify-content: stretch;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .metro-select-btn {
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+
+  .metro-select-btn > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .metro-select-menu {
+    position: fixed;
+    top: calc(var(--topbar-h) - 4px);
+    right: 8px;
+    left: 8px;
+    min-width: 0;
+    max-height: min(68vh, 520px);
+    transform: none;
+  }
+
+  .metro-select-menu li { min-height: 44px; }
+
+  .topbar-actions { gap: 6px; }
+  .topbar-search,
+  .topbar-actions > .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .topbar-search .ts-label,
+  .topbar-search .ts-kbd { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.drawer-modal-open::before { backdrop-filter: none; }
+}
+
+:root[data-motion="reduce"] body.drawer-modal-open::before { backdrop-filter: none; }

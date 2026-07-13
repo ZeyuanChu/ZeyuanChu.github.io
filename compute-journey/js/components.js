@@ -91,6 +91,8 @@ window.Components = (function () {
   /* ============================ 首页 ============================ */
   function buildHome() {
     const wrap = el("div", "home");
+    const resumeHash = App.store.resume();
+    const hasResume = resumeHash && resumeHash !== "#/";
 
     const hero = el("div", "hero");
     hero.innerHTML =
@@ -99,34 +101,29 @@ window.Components = (function () {
       '<p class="hero-lead">从一张显卡，到一朵能对外卖 Token 的云——外行看懂主线，内行点出细节。' +
         '<span class="hero-note">为什么是现在：AI 需求爆发、GPU 自 2023 年持续紧缺，大厂排队动辄数周；一批“新云”买卡自建、按需把算力与 Token 卖出去，往往更快也更便宜——这就是当下。</span></p>' +
       '<div class="hero-cta">' +
-        '<a class="btn-primary" href="#/s/gpu">开始旅程' +
+        '<a class="btn-primary" href="' + (hasResume ? resumeHash : "#/s/gpu") + '">' + (hasResume ? "继续旅程" : "开始旅程") +
           '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7h8M7 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '</a>' +
-        '<button class="btn-secondary" id="tourBtn">带我走一遍</button>' +
+        '<button class="btn-secondary" id="tourBtn">完整导览</button>' +
       '</div>';
     wrap.appendChild(hero);
     hero.querySelector("#tourBtn").addEventListener("click", () => startTour());
 
     /* 快捷入口 */
-    const resumeHash = App.store.resume();
     const quick = el("div", "quicknav");
     const items = [
       { hash: "#/atlas", ic: "graph", label: "图谱 Atlas" },
       { hash: "#/labs", ic: "cost", label: "实验室" },
       { hash: "#/scenarios", ic: "scenario", label: "场景库" },
-      { hash: "#/glossary", ic: "search", label: "术语表" },
-      { hash: "#/cost", ic: "cost", label: "成本估算" }
+      { hash: "#/glossary", ic: "search", label: "术语表" }
     ];
-    if (resumeHash && resumeHash !== "#/") items.unshift({ hash: resumeHash, ic: "play", label: "继续上次", primary: true });
     quick.innerHTML = items.map(it =>
       '<a class="quick-chip' + (it.primary ? " primary" : "") + '" href="' + it.hash + '">' + icon(it.ic) + '<span>' + it.label + '</span></a>').join("");
     wrap.appendChild(quick);
 
-    const pano = el("div", "panorama");
-    pano.innerHTML = '<div class="panorama-title">主线全景 · 从一张显卡，到一朵云</div>' + panoramaSVG();
-    wrap.appendChild(pano);
-    wirePanorama(pano);
-
+    const routeHead = el("div", "home-route-head");
+    routeHead.innerHTML = '<span>十站学习路线</span><strong>按 1–10 顺序建立完整算力认知</strong>';
+    wrap.appendChild(routeHead);
     const grid = el("div", "station-grid");
     DATA.stations.forEach(s => grid.appendChild(stationCard(s)));
     wrap.appendChild(grid);
@@ -139,7 +136,8 @@ window.Components = (function () {
   }
 
   function stationCard(s) {
-    const card = el("div", "station-card");
+    const card = el("a", "station-card");
+    card.href = "#/s/" + s.id;
     card.style.setProperty("--sc-color", s.color);
     let statusCls = "", statusTxt = "未开始";
     if (App.store.badged(s.id)) { statusCls = "badged"; statusTxt = "已获徽章"; }
@@ -153,11 +151,7 @@ window.Components = (function () {
       '<div class="sc-line">' + firstSentence(s.intro).replace(/【[^】]*】/g, "") + '</div>' +
       '<div class="sc-foot"><span class="sc-status ' + statusCls + '"><span class="dot"></span>' + statusTxt + '</span>' +
         (s.est ? '<span class="sc-est">约 ' + s.est + ' 分钟</span>' : '') + '</div>';
-    card.setAttribute("role", "link");
-    card.setAttribute("tabindex", "0");
     card.setAttribute("aria-label", "第 " + s.num + " 站 " + s.name + "：" + s.sub);
-    card.addEventListener("click", () => App.go("#/s/" + s.id));
-    card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); App.go("#/s/" + s.id); } });
     return card;
   }
 
@@ -405,76 +399,303 @@ window.Components = (function () {
     });
   }
 
-  /* ============================ 站点页 ============================ */
-  function buildStationPage(station) {
-    const page = el("div", "station-page");
-    page.style.setProperty("--accent", station.color);
+  /* ============================ 站点工作台 ============================ */
+  function getWorkbenchConfig(station) {
+    const source = (window.StationWorkbenchConfig || {})[station.id] || {};
+    const fallbackNode = station.nodes[0] || {};
+    const legend = Array.isArray(source.legend)
+      ? source.legend.map(item => item.label || item.description || "").filter(Boolean).join(" · ")
+      : source.legend;
+    return {
+      question: source.question || ("这一站要回答什么？"),
+      task: source.task || station.sub,
+      defaultNode: source.defaultNode || fallbackNode.id,
+      legend: legend || "选择场景或图中部件，右侧会给出机制、指标和下一步。",
+      mobileSummary: source.mobileSummary || station.tldr || firstSentence(station.intro),
+      modes: source.modes && source.modes.length ? source.modes : [{
+        id: "overview", label: "总览", description: legend || station.sub, node: fallbackNode.id
+      }],
+      scenarios: source.scenarios && source.scenarios.length ? source.scenarios : [],
+      metrics: source.metrics && source.metrics.length ? source.metrics : [
+        { label: "知识模块", value: String(station.nodes.length), meta: "可点击探索", tone: "info" },
+        { label: "学习时长", value: "约 " + (station.est || 3) + " 分钟", meta: "按自己的节奏", tone: "neutral" }
+      ]
+    };
+  }
 
-    const prog = App.store.stationProgress(station);
-    const left = el("div", "station-left");
-    left.innerHTML =
-      '<div class="station-head">' +
-        '<div class="station-tag"><span class="tag-dot"></span>第 ' + station.num + ' 站 · ' + DOMAIN[station.id] + '</div>' +
-        '<div class="station-ring" title="本站已读 ' + prog.done + '/' + prog.total + '">' + ringSVG(prog.frac, 40) + '</div>' +
-      '</div>' +
-      '<h2 class="station-name">' + stationIcon(station, "sn-ic") + station.name + '</h2>' +
-      '<div class="station-sub">' + station.sub + '</div>';
+  function buildStationHeader(station, config, prog) {
+    const header = el("header", "workbench-header");
+    header.innerHTML =
+      '<div class="workbench-eyebrow"><span class="tag-dot"></span>第 ' + station.num + ' 站 · ' + DOMAIN[station.id] +
+        '<span class="workbench-eyebrow-sep">/</span><span>核心任务</span></div>' +
+      '<div class="workbench-header-grid">' +
+        '<div><h1 class="workbench-title">' + stationIcon(station, "workbench-title-icon") + esc(station.name) + '</h1>' +
+          '<p class="workbench-subtitle">' + esc(station.sub) + '</p>' +
+          '<p class="workbench-question">' + esc(config.question) + '</p></div>' +
+        '<div class="workbench-progress" title="本站已读 ' + prog.done + '/' + prog.total + '">' +
+          ringSVG(prog.frac, 48) +
+          '<span><strong>' + prog.done + '/' + prog.total + '</strong><small>知识模块已读</small></span></div>' +
+      '</div>';
+    return header;
+  }
 
-    if (station.contentV4) left.appendChild(buildV4StationIntro(station));
+  function buildStationNavigator(station, config) {
+    const rail = el("aside", "station-left journey-rail");
+    rail.setAttribute("aria-label", "本站知识导航");
+    rail.innerHTML = '<div class="journey-rail-head"><span>知识目录</span><strong>按对象逐项理解</strong></div>';
 
-    // 一分钟看懂
-    const tldr = el("details", "tldr-block");
-    tldr.innerHTML =
-      '<summary><span class="chev">›</span>一分钟看懂' + (station.est ? '<span class="tldr-est">约 ' + station.est + ' 分钟</span>' : '') + '</summary>' +
-      '<div class="tldr-body">' + (station.tldr || firstSentence(station.intro)) + '</div>';
-    left.appendChild(tldr);
+    if (station.contentV4) rail.appendChild(buildV4StationIntro(station));
 
-    left.appendChild(el("div", "station-intro", station.intro));
-    left.appendChild(el("div", "parts-title", station.contentV4 ? "知识模块 · 点击部件" : "可点击部件"));
+    rail.appendChild(el("div", "parts-title", "知识模块 · 点选后在右侧展开"));
 
     const list = el("div", "parts-list");
-    station.nodes.forEach(node => {
-      const row = el("div", "part-row");
+    station.nodes.forEach((node, index) => {
+      const row = el("button", "part-row");
+      row.type = "button";
       row.dataset.node = node.id;
+      row.dataset.railIndex = String(index + 1);
       if (App.store.read(station.id, node.id)) row.classList.add("read");
-      row.setAttribute("role", "button");
-      row.setAttribute("tabindex", "0");
       row.setAttribute("aria-label", node.name + "：" + node.brief);
       row.innerHTML =
-        '<span class="part-marker"></span>' +
-        '<span class="part-text"><span class="part-name">' + node.name + '</span>' +
-        '<span class="part-brief">' + node.brief + '</span></span>' +
+        '<span class="part-marker">' + String(index + 1).padStart(2, "0") + '</span>' +
+        '<span class="part-text"><span class="part-name">' + esc(node.name) + '</span>' +
+        '<span class="part-brief">' + esc(node.brief) + '</span></span>' +
         '<span class="part-read" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M3 7.5l2.5 2.5L11 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
-        '<span class="part-arrow">›</span>';
+        '<span class="part-arrow" aria-hidden="true">›</span>';
       row.addEventListener("click", () => App.openNode(station.id, [node.id]));
-      row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); App.openNode(station.id, [node.id]); } });
       list.appendChild(row);
     });
-    left.appendChild(list);
+    rail.appendChild(list);
 
-    // 进阶层入口
     if (station.advanced) {
       const adv = el("button", "advanced-entry");
       adv.setAttribute("aria-label", station.advanced.title);
-      adv.innerHTML = '<span class="ae-badge">进阶</span><span class="ae-text">' + station.advanced.title.replace(/^进阶：?/, "") + '</span><span class="ae-arrow">▸</span>';
+      adv.innerHTML = '<span class="ae-badge">进阶</span><span class="ae-text">' + esc(station.advanced.title.replace(/^进阶：?/, "")) + '</span><span class="ae-arrow">▸</span>';
       adv.addEventListener("click", () => App.openNode(station.id, ["adv"]));
-      left.appendChild(adv);
+      rail.appendChild(adv);
+    }
+    return rail;
+  }
+
+  function buildStageWorkbench(station, config) {
+    const center = el("section", "station-workbench");
+    center.setAttribute("aria-label", station.name + "交互工作台");
+    const overviewMode = config.modes[0] || { id: "overview", label: "总览", description: config.legend, node: config.defaultNode };
+    const scenarioButtons = config.scenarios.map((scene, index) => {
+      const directMode = config.modes.find(mode => mode.id === scene.modeId);
+      const nodeMode = config.modes.find(mode => mode.node && mode.node === scene.node);
+      const mode = directMode || nodeMode || overviewMode;
+      return '<button type="button" class="observation-task" data-workbench-scenario="' + esc(scene.id) + '" data-mode-id="' + esc(mode.id) + '" data-node="' + esc(scene.node || "") + '" data-description="' + esc(scene.description || "") + '" data-status="' + esc(scene.status || "观察任务") + '" data-next="' + esc(scene.next || "观察图中变化，再打开相关知识解释。") + '" aria-pressed="false" aria-label="' + esc(scene.label + "：" + (scene.description || "")) + '">' +
+        '<span class="observation-task-index">' + String(index + 1).padStart(2, "0") + '</span><span><strong>' + esc(scene.label) + '</strong><small>' + esc(scene.status || "观察任务") + '</small></span></button>';
+    }).join("");
+
+    center.innerHTML =
+      '<div class="observation-taskbar">' +
+        '<div class="observation-task-heading"><span class="workbench-kicker">观察任务</span><strong>选择任务，中央图会进入对应状态</strong></div>' +
+        '<div class="observation-task-list" role="group" aria-label="观察任务">' +
+          '<button type="button" class="observation-task observation-overview is-active" data-workbench-overview="true" data-mode-id="' + esc(overviewMode.id) + '" data-node="' + esc(overviewMode.node || "") + '" data-description="' + esc(overviewMode.description || config.legend) + '" aria-pressed="true"><span class="observation-task-index">00</span><span><strong>总览</strong><small>正常结构</small></span></button>' +
+          scenarioButtons +
+        '</div>' +
+      '</div>' +
+      '<div class="station-stage-wrap workbench-stage-wrap" data-workbench-mode="' + esc(overviewMode.id) + '" data-workbench-scenario="">' +
+        '<div class="station-stage" aria-label="' + esc(station.name) + '场景图"></div>' +
+      '</div>' +
+      '<section class="evidence-console" aria-label="观察证据" aria-live="polite">' +
+        '<div class="evidence-console-head"><span>观察证据</span><small>教学状态，不代表生产遥测</small></div>' +
+        '<div class="evidence-console-grid">' +
+          '<div><span>现象</span><strong data-evidence-phenomenon>系统总览</strong></div>' +
+          '<div><span>影响</span><strong data-evidence-impact>' + esc(config.legend) + '</strong></div>' +
+          '<div><span>下一步</span><strong data-evidence-next>选择一个观察任务，或点击图中对象查看知识解释。</strong></div>' +
+        '</div>' +
+      '</section>';
+    return center;
+  }
+
+  function buildInspectorDefault(station) {
+    const config = getWorkbenchConfig(station);
+    const wrap = el("div", "inspector-default");
+    wrap.innerHTML =
+      '<div class="inspector-eyebrow">知识检查器</div>' +
+      '<h2>观察总览</h2>' +
+      '<p>' + esc(config.legend) + '</p>' +
+      '<ol class="inspector-guide"><li><b>选任务</b><span>让中央图进入对应状态</span></li><li><b>看证据</b><span>确认现象、影响和下一步</span></li><li><b>点对象</b><span>打开规范知识解释</span></li></ol>' +
+      '<div class="inspector-mobile-note">移动端中，知识解释会从底部展开。</div>';
+    return wrap;
+  }
+
+  function buildContextInspector(station) {
+    const inspector = el("aside", "knowledge-inspector");
+    inspector.setAttribute("aria-label", "知识检查器");
+    const content = el("div", "knowledge-inspector-content");
+    content.appendChild(buildInspectorDefault(station));
+    inspector.appendChild(content);
+    return inspector;
+  }
+
+  function focusWorkbenchNode(page, nodeId) {
+    const path = String(nodeId || "").split("/").filter(Boolean);
+    const root = path[0] === "adv" ? path[1] || "" : path[0] || "";
+    const full = path.join("/");
+    page.querySelectorAll(".station-stage [data-node], .station-stage [data-path]").forEach(item => {
+      const match = !!root && (item.dataset.node === root || item.dataset.path === full || item.dataset.path === "adv/" + root);
+      item.classList.toggle("wb-focus", match);
+      if (match) item.setAttribute("aria-current", "true"); else item.removeAttribute("aria-current");
+    });
+    page.querySelectorAll(".part-row[data-node]").forEach(item => {
+      const match = !!root && item.dataset.node === root;
+      item.classList.toggle("wb-focus", match);
+      if (match) item.setAttribute("aria-current", "true"); else item.removeAttribute("aria-current");
+    });
+  }
+
+  function updateEvidence(page, phenomenon, impact, next) {
+    const p = page.querySelector("[data-evidence-phenomenon]");
+    const i = page.querySelector("[data-evidence-impact]");
+    const n = page.querySelector("[data-evidence-next]");
+    if (p) p.textContent = phenomenon || "系统总览";
+    if (i) i.textContent = impact || "观察中央图中的状态变化。";
+    if (n) n.textContent = next || "点击图中对象查看知识解释。";
+  }
+
+  function selectObservationTask(page, button) {
+    page.querySelectorAll(".observation-task").forEach(item => {
+      const active = item === button;
+      item.classList.toggle("is-active", active);
+      item.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+
+  function wireWorkbench(page, station, config) {
+    const stageWrap = page.querySelector(".workbench-stage-wrap");
+    const stageMount = page.querySelector(".station-stage");
+    const modeById = id => config.modes.find(mode => mode.id === id) || config.modes[0];
+    const controller = () => App.stageController;
+    if (!App.state.workbench || App.state.workbench.stationId !== station.id) {
+      App.state.workbench = { stationId: station.id, modeId: (config.modes[0] || {}).id || "overview", scenarioId: null, scenarioPhase: "idle", selectedPath: [], source: "init" };
+    }
+    if (stageMount) stageMount.addEventListener("stage:statechange", event => {
+      const detail = event.detail || {};
+      if (!detail.status && !detail.context) return;
+      const next = page.querySelector("[data-evidence-next]");
+      updateEvidence(page, detail.status || "状态已更新", detail.context || "观察中央图中的变化。", detail.next || (next && next.textContent));
+    });
+
+    page.querySelectorAll("button[data-workbench-overview]").forEach(button => {
+      button.addEventListener("click", () => {
+        const mode = modeById(button.dataset.modeId);
+        selectObservationTask(page, button);
+        App.state.workbench = { stationId: station.id, modeId: mode.id, scenarioId: null, scenarioPhase: "idle", selectedPath: [], source: "overview" };
+        if (stageWrap) { stageWrap.dataset.workbenchMode = mode.id; stageWrap.dataset.workbenchScenario = ""; }
+        if (controller() && controller().clearScenario) controller().clearScenario();
+        if (controller() && controller().setMode) controller().setMode(mode.id, mode);
+        focusWorkbenchNode(page, "");
+        updateEvidence(page, "系统总览", config.legend, "选择一个观察任务，或点击图中对象查看知识解释。");
+        if (App.state.drawerPath && App.state.drawerPath.length && App.closeDrawer) App.closeDrawer();
+      });
+    });
+
+    page.querySelectorAll("[data-workbench-scenario]").forEach(button => {
+      button.addEventListener("click", () => {
+        const scene = config.scenarios.find(item => item.id === button.dataset.workbenchScenario);
+        const mode = modeById(button.dataset.modeId);
+        selectObservationTask(page, button);
+        const nodeId = button.dataset.node;
+        App.state.workbench = { stationId: station.id, modeId: mode.id, scenarioId: button.dataset.workbenchScenario, scenarioPhase: "active", selectedPath: String(nodeId || "").split("/").filter(Boolean), source: "scenario" };
+        if (stageWrap) { stageWrap.dataset.workbenchMode = mode.id; stageWrap.dataset.workbenchScenario = button.dataset.workbenchScenario; }
+        updateEvidence(page, (button.dataset.status || "观察任务") + " · " + (scene ? scene.label : button.textContent.trim()), button.dataset.description, button.dataset.next);
+        if (controller() && controller().setMode) controller().setMode(mode.id, mode);
+        if (controller() && controller().applyScenario) controller().applyScenario(button.dataset.workbenchScenario, scene || {});
+        focusWorkbenchNode(page, nodeId);
+        if (nodeId) App.openNode(station.id, String(nodeId).split("/").filter(Boolean));
+      });
+    });
+
+    setTimeout(() => {
+      const mode = modeById(App.state.workbench.modeId);
+      if (controller() && controller().setMode) controller().setMode(mode.id, mode);
+      if (App.state.drawerPath && App.state.drawerPath.length) {
+        focusWorkbenchNode(page, App.state.drawerPath.join("/"));
+        if (controller() && controller().focusPath) controller().focusPath(App.state.drawerPath.slice());
+      }
+    }, 0);
+  }
+
+  function syncWorkbench(page, station, path) {
+    if (!page || !station) return;
+    const config = getWorkbenchConfig(station);
+    const ids = (path || []).slice();
+    const root = ids[0] === "adv" ? ids[1] || "" : ids[0] || "";
+    let state = App.state.workbench;
+    if (!state || state.stationId !== station.id) {
+      state = App.state.workbench = { stationId: station.id, modeId: (config.modes[0] || {}).id || "overview", scenarioId: null, scenarioPhase: "idle", selectedPath: [], source: "route" };
+    }
+    state.selectedPath = ids;
+    state.source = "route";
+
+    if (state.scenarioId) {
+      const scene = config.scenarios.find(item => item.id === state.scenarioId);
+      const task = page.querySelector('[data-workbench-scenario="' + state.scenarioId + '"]');
+      const sceneMatchesPath = !root || !scene || scene.node === root;
+      if (!sceneMatchesPath) {
+        state.scenarioId = null;
+        state.scenarioPhase = "idle";
+        const overviewTask = page.querySelector("[data-workbench-overview]");
+        if (overviewTask) selectObservationTask(page, overviewTask);
+        const stageWrap = page.querySelector(".workbench-stage-wrap");
+        if (stageWrap) stageWrap.dataset.workbenchScenario = "";
+        if (App.stageController && App.stageController.clearScenario) App.stageController.clearScenario();
+      } else if (scene) {
+        const sceneMode = config.modes.find(item => item.id === scene.modeId) || config.modes.find(item => item.node === scene.node) || config.modes[0];
+        if (task) selectObservationTask(page, task);
+        state.modeId = sceneMode.id;
+        const stageWrap = page.querySelector(".workbench-stage-wrap");
+        if (stageWrap) {
+          stageWrap.dataset.workbenchMode = sceneMode.id;
+          stageWrap.dataset.workbenchScenario = scene.id;
+        }
+        const controllerState = App.stageController && App.stageController.getState ? App.stageController.getState() : null;
+        const currentScenario = controllerState && (controllerState.scenarioId || controllerState.scenario);
+        const currentMode = controllerState && controllerState.modeId;
+        const modeMismatch = currentMode != null && currentMode !== sceneMode.id;
+        if ((currentScenario !== scene.id || modeMismatch) && App.stageController) {
+          if (App.stageController.setMode) App.stageController.setMode(sceneMode.id, sceneMode);
+          if (App.stageController.applyScenario) App.stageController.applyScenario(scene.id, scene);
+        }
+      }
     }
 
-    const stageWrap = el("div", "station-stage-wrap");
-    stageWrap.appendChild(el("div", "station-stage"));
+    if (!state.scenarioId && root) {
+      const mode = config.modes.find(item => item.node === root) || config.modes.find(item => item.id === state.modeId) || config.modes[0];
+      if (mode) {
+        state.modeId = mode.id;
+        const stageWrap = page.querySelector(".workbench-stage-wrap");
+        if (stageWrap) stageWrap.dataset.workbenchMode = mode.id;
+        if (App.stageController && App.stageController.setMode) App.stageController.setMode(mode.id, mode);
+        updateEvidence(page, "正在查看 · " + ((station.nodes.find(node => node.id === root) || {}).name || root), mode.description || config.legend, "继续点击图中对象，或选择一个观察任务查看状态变化。");
+      }
+    }
+    focusWorkbenchNode(page, ids.join("/"));
+    if (App.stageController && App.stageController.focusPath) App.stageController.focusPath(ids);
+  }
+
+  function buildStationPage(station) {
+    const page = el("div", "station-page station-workbench-page");
+    page.style.setProperty("--accent", station.color);
+    const config = getWorkbenchConfig(station);
+    const prog = App.store.stationProgress(station);
+    page.appendChild(buildStationHeader(station, config, prog));
+
+    const cols = el("div", "station-cols workbench-cols");
+    cols.appendChild(buildStationNavigator(station, config));
+    cols.appendChild(buildStageWorkbench(station, config));
+    cols.appendChild(buildContextInspector(station));
+    page.appendChild(cols);
 
     const footer = el("div", "station-footer");
     footer.appendChild(buildQuiz(station));
     footer.appendChild(buildStationNav(station));
-
-    // 把左栏+舞台包进 .station-cols（网格），footer 作为其兄弟置于下方。
-    // 这样 sticky 左栏的容器块只到"两栏区"底部，不会再浮到满宽的小测之上。
-    const cols = el("div", "station-cols");
-    cols.appendChild(left);
-    cols.appendChild(stageWrap);
-    page.appendChild(cols);
     page.appendChild(footer);
+    wireWorkbench(page, station, config);
     return page;
   }
 
@@ -482,13 +703,14 @@ window.Components = (function () {
     const profile = station.contentV4;
     const box = el("section", "station-v4");
     const sourceCount = (profile.sourceIds || []).length;
-    box.innerHTML =
-      '<div class="station-v4-head"><span class="station-v4-badge">L0–L3</span>' +
-        '<span class="station-v4-meta">分层知识 · ' + sourceCount + ' 个一手来源</span></div>' +
-      '<div class="station-v4-title">' + esc(profile.focus || "分层知识") + '</div>';
+    box.innerHTML = '<div class="station-v4-head"><span class="station-v4-badge">L0–L3</span><span class="station-v4-meta">' + sourceCount + ' 个一手来源</span></div>';
+    const overview = el("details", "station-v4-objectives station-overview");
+    overview.innerHTML = '<summary><span class="chev">›</span>本站概览' + (station.est ? '<span class="tldr-est">约 ' + station.est + ' 分钟</span>' : '') + '</summary>' +
+      '<div class="station-overview-body"><strong>' + esc(profile.focus || station.sub) + '</strong><p>' + esc(station.tldr || firstSentence(station.intro)) + '</p></div>';
+    box.appendChild(overview);
     if (profile.learningObjectives && profile.learningObjectives.length) {
       const details = el("details", "station-v4-objectives");
-      details.innerHTML = '<summary><span class="chev">›</span>本站学完能做什么</summary>' +
+      details.innerHTML = '<summary><span class="chev">›</span>学习目标</summary>' +
         '<ul>' + profile.learningObjectives.map(item => '<li>' + esc(item) + '</li>').join("") + '</ul>';
       box.appendChild(details);
     }
@@ -528,13 +750,15 @@ window.Components = (function () {
     /* 顶部：面包屑 + 复制链接 + 关闭 */
     const top = el("div", "drawer-top");
     const bc = el("div", "breadcrumb");
-    const stationCrumb = el("span", "crumb", station.name);
+    const stationCrumb = el("button", "crumb", station.name);
+    stationCrumb.type = "button";
     stationCrumb.addEventListener("click", () => App.closeDrawer());
     bc.appendChild(stationCrumb);
     chain.forEach((n, i) => {
       bc.appendChild(el("span", "sep", "›"));
       const isCurrent = i === chain.length - 1;
-      const c = el("span", "crumb" + (isCurrent ? " current" : ""), App.crumbLabel(station, n, i));
+      const c = el(isCurrent ? "span" : "button", "crumb" + (isCurrent ? " current" : ""), App.crumbLabel(station, n, i));
+      if (!isCurrent) c.type = "button";
       if (!isCurrent) c.addEventListener("click", () => App.openNode(station.id, pathIds.slice(0, i + 1)));
       bc.appendChild(c);
     });
@@ -561,7 +785,7 @@ window.Components = (function () {
 
     /* 标题区 */
     const titleRow = el("div", "card-title-row");
-    titleRow.innerHTML = '<span class="card-title">' + node.name + '</span>' +
+    titleRow.innerHTML = '<h2 class="card-title" tabindex="-1">' + node.name + '</h2>' +
       (node.en ? '<span class="card-en">' + node.en + '</span>' : '') +
       (advanced ? '<span class="card-domain-chip adv-chip">进阶</span>' : '<span class="card-domain-chip">' + DOMAIN[station.id] + '</span>');
     content.appendChild(titleRow);
@@ -605,8 +829,8 @@ window.Components = (function () {
 
     /* 成本估算器入口 */
     if (node.cost) {
-      const costBtn = el("a", "card-cost-link", icon("cost") + '打开成本估算器（TCO 账链）→');
-      costBtn.href = "#/cost";
+      const costBtn = el("a", "card-cost-link", icon("cost") + '打开 Token 经济性实验室 →');
+      costBtn.href = "#/lab/token";
       content.appendChild(costBtn);
     }
 
@@ -615,15 +839,13 @@ window.Components = (function () {
       content.appendChild(el("div", "card-section-label", advanced ? "逐项展开" : "点开看看，里面还有什么"));
       const box = el("div", "card-children");
       node.children.forEach(ch => {
-        const row = el("div", "card-child-row");
-        row.setAttribute("role", "button");
-        row.setAttribute("tabindex", "0");
+        const row = el("button", "card-child-row");
+        row.type = "button";
         row.setAttribute("aria-label", ch.name + "：" + (ch.brief || ""));
         row.innerHTML = '<span class="cc-text"><span class="cc-name">' + ch.name + '</span>' +
           (ch.brief ? '<span class="cc-brief">' + ch.brief + '</span>' : '') + '</span><span class="cc-arrow">›</span>';
         const openIt = () => App.openNode(station.id, pathIds.concat(ch.id));
         row.addEventListener("click", openIt);
-        row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIt(); } });
         box.appendChild(row);
       });
       content.appendChild(box);
@@ -661,6 +883,7 @@ window.Components = (function () {
     return content;
   }
 
+  let v4LevelUid = 0;
   function buildV4Knowledge(content, concept) {
     const review = concept.review || {};
     const status = review.status === "reviewed" ? "专业复核" : review.status === "source-checked" ? "来源已核对" : "待专业复核";
@@ -680,14 +903,23 @@ window.Components = (function () {
 
     const learning = el("section", "v4-learning");
     const tabs = el("div", "v4-level-tabs");
-    tabs.setAttribute("role", "group");
+    tabs.setAttribute("role", "tablist");
     tabs.setAttribute("aria-label", "知识深度");
     const panel = el("div", "v4-level-panel");
+    const panelId = "v4-level-panel-" + (++v4LevelUid);
+    panel.id = panelId;
+    panel.setAttribute("role", "tabpanel");
     panel.setAttribute("aria-live", "polite");
 
     function selectLevel(key) {
-      tabs.querySelectorAll("button").forEach(btn => btn.setAttribute("aria-pressed", btn.dataset.level === key ? "true" : "false"));
+      tabs.querySelectorAll("button").forEach(btn => {
+        const selected = btn.dataset.level === key;
+        btn.setAttribute("aria-selected", selected ? "true" : "false");
+        btn.tabIndex = selected ? 0 : -1;
+      });
       const level = levels[key];
+      const selectedTab = tabs.querySelector('[data-level="' + key + '"]');
+      if (selectedTab) panel.setAttribute("aria-labelledby", selectedTab.id);
       panel.innerHTML = '<div class="v4-level-kicker">' + esc((labels[key] || [key, ""])[0]) + ' · ' + esc(level.title || "分层理解") + '</div>' +
         '<div class="v4-level-text">' + esc(level.text || "") + '</div>';
       if (level.prompt) panel.appendChild(el("div", "v4-level-prompt", '<span>想一想</span>' + esc(level.prompt)));
@@ -698,10 +930,28 @@ window.Components = (function () {
       const btn = el("button", "v4-level-btn");
       btn.type = "button";
       btn.dataset.level = key;
-      btn.setAttribute("aria-pressed", key === current ? "true" : "false");
+      btn.id = panelId + "-" + key;
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-controls", panelId);
+      btn.setAttribute("aria-selected", key === current ? "true" : "false");
+      btn.tabIndex = key === current ? 0 : -1;
       btn.innerHTML = '<b>' + labels[key][0] + '</b><small>' + labels[key][1] + '</small>';
       btn.addEventListener("click", () => selectLevel(key));
       tabs.appendChild(btn);
+    });
+    tabs.addEventListener("keydown", e => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") return;
+      const buttons = Array.from(tabs.querySelectorAll("button"));
+      const currentIndex = buttons.indexOf(document.activeElement);
+      if (currentIndex < 0) return;
+      e.preventDefault();
+      let nextIndex = currentIndex;
+      if (e.key === "Home") nextIndex = 0;
+      else if (e.key === "End") nextIndex = buttons.length - 1;
+      else if (e.key === "ArrowRight") nextIndex = (currentIndex + 1) % buttons.length;
+      else nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      buttons[nextIndex].focus();
+      selectLevel(buttons[nextIndex].dataset.level);
     });
     learning.appendChild(tabs);
     learning.appendChild(panel);
@@ -739,6 +989,7 @@ window.Components = (function () {
         link.href = source.url;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
+        link.setAttribute("aria-label", source.title + "（新窗口打开）");
         link.innerHTML = '<span class="v4-source-type">' + esc(source.type || "来源") + '</span>' +
           '<span class="v4-source-title">' + esc(source.title) + '</span>' +
           '<span class="v4-source-date">' + esc(source.publisher || "") +
@@ -799,16 +1050,17 @@ window.Components = (function () {
       '<span class="quiz-badge-mini' + (already ? " done" : "") + '">' +
       (already
         ? '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 10.8 4.2 12.8l.7-4.3-3.1-3 4.3-.6z" fill="currentColor"/></svg>已获徽章'
-        : '全部答对得徽章') + '</span>';
+        : '完成小测得徽章') + '</span>';
     details.appendChild(summary);
 
     const body = el("div", "quiz-body");
     const correctFlags = station.quiz.map(() => false);
 
     station.quiz.forEach((q, qi) => {
-      const qBlock = el("div", "quiz-q");
-      qBlock.innerHTML = '<div class="q-text"><span class="q-idx">' + (qi + 1) + '.</span>' + q.q +
-        (q.kind ? '<span class="q-kind">' + esc(q.kind) + '</span>' : '') + '</div>';
+      const qBlock = el("fieldset", "quiz-q");
+      const qLegend = el("legend", "q-text", '<span class="q-idx">' + (qi + 1) + '.</span>' + q.q +
+        (q.kind ? '<span class="q-kind">' + esc(q.kind) + '</span>' : ''));
+      qBlock.appendChild(qLegend);
       const opts = el("div", "quiz-options");
       const fb = el("div", "quiz-feedback");
       q.options.forEach((opt, oi) => {
@@ -1133,6 +1385,22 @@ window.Components = (function () {
   }
 
   /* ============================ 首运欢迎 / 导览 ============================ */
+  let overlayReturn = null, overlayUntrap = null;
+  function prepareOverlayDialog(modal, titleId) {
+    overlayReturn = document.activeElement;
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    const title = modal.querySelector("h2");
+    if (title) {
+      title.id = titleId;
+      title.tabIndex = -1;
+      modal.setAttribute("aria-labelledby", titleId);
+    }
+    if (overlayUntrap) overlayUntrap();
+    overlayUntrap = App.trapFocus(modal);
+    requestAnimationFrame(() => { if (title) title.focus({ preventScroll: true }); });
+  }
+
   function startWelcome(force) {
     if (!force && App.store.tourDone()) return;
     const overlay = document.getElementById("overlay");
@@ -1140,16 +1408,17 @@ window.Components = (function () {
     const modal = el("div", "welcome-modal");
     modal.innerHTML =
       '<div class="wel-badge">' + icon("model") + '</div>' +
-      '<h2>欢迎来到「算力之旅」</h2>' +
-      '<p>一张可以不断点开的算力建设全景地图——从一张显卡，到一朵能对外卖 Token 的云。先选一个身份，我们帮你把入口排好：</p>' +
+      '<h2>选择默认阅读深度</h2>' +
+      '<p>内容不会被隐藏；这个选择只决定知识卡默认展开到哪一层，之后随时可以切换。</p>' +
       '<div class="role-cards">' +
-        roleCard("sales", "销售 / 售前", "场景库 · 决策树 · 导览") +
-        roleCard("manage", "职能 / 管理", "一分钟看懂 · 主线") +
-        roleCard("tech", "技术新人", "知识图谱 · 深层卡片 · 测验") +
+        roleCard("sales", "业务视角", "默认 L1 · 看懂机制与对客表达") +
+        roleCard("manage", "管理视角", "默认 L0 · 先看结论与边界") +
+        roleCard("tech", "技术视角", "默认 L2 · 展开取舍与实现") +
       '</div>' +
-      '<div class="wel-actions"><button class="btn-secondary" id="welSkip">先随便逛逛</button><button class="btn-primary" id="welTour">带我走一遍</button></div>';
+      '<div class="wel-actions"><button class="btn-secondary" id="welSkip">直接进入</button><button class="btn-primary" id="welTour">开启完整导览</button></div>';
     overlay.appendChild(modal);
     overlay.hidden = false;
+    prepareOverlayDialog(modal, "welcome-title");
     modal.querySelectorAll(".role-card").forEach(rc => {
       rc.addEventListener("click", () => {
         const r = rc.dataset.role;
@@ -1160,22 +1429,17 @@ window.Components = (function () {
     });
     modal.querySelector("#welSkip").addEventListener("click", () => { App.store.setTourDone(); closeOverlay(); if (App.state.route === "home") App.render(); });
     modal.querySelector("#welTour").addEventListener("click", () => { App.store.setTourDone(); closeOverlay(); startTour(); });
-    overlay.addEventListener("click", e => { if (e.target === overlay) { App.store.setTourDone(); closeOverlay(); } });
+    overlay.onclick = e => { if (e.target === overlay) { App.store.setTourDone(); closeOverlay(); } };
   }
   function roleCard(id, title, sub) {
     return '<button class="role-card" data-role="' + id + '"><span class="rc-title">' + title + '</span><span class="rc-sub">' + sub + '</span></button>';
   }
 
   /* 轻量导览：按脚本依次跳转 + 顶部提示条 */
-  const TOUR = [
-    { hash: "#/", text: "这是主线全景：从一张显卡，到一朵能卖 Token 的云。每一段都能点。" },
-    { hash: "#/s/gpu/vram", text: "看一张卡，第一个要看的数字是显存——它决定模型放不放得下。" },
-    { hash: "#/s/server/gpu8/why8", text: "8 张卡是当前的“标准积木”（进阶里看它如何上移到机架级超节点）。" },
-    { hash: "#/s/network/computenet", text: "上千台机器靠“计算网”像一台机器一样协同。" },
-    { hash: "#/s/model/inference", text: "推理层别有洞天——一整套让服务又快又省的技术。" },
-    { hash: "#/s/token/pricing", text: "我们这门生意的闭环：把成本摊到每百万 Token，定价卖出去。" },
-    { hash: "#/s/delivery", text: "四种交付方式，用一棵决策树帮客户选。" }
-  ];
+  const TOUR = [{ hash: "#/", text: "这是一条十站学习路线：从硬件、基础设施和平台，一直走到交付、经营与运维。" }].concat(DATA.stations.map(station => ({
+    hash: "#/s/" + station.id,
+    text: "第 " + station.num + " 站 · " + station.name + "：" + station.sub + "。选择观察任务，让中央图进入对应状态。"
+  })));
   let tourBar = null, tourIdx = 0;
   function startTour() {
     stopTour();
@@ -1221,6 +1485,7 @@ window.Components = (function () {
     const overlay = document.getElementById("overlay");
     overlay.innerHTML = "";
     const modal = el("div", "cert-modal");
+    modal.insertAdjacentHTML("afterbegin", '<h2 class="sr-only">算力之旅结业证书</h2>');
     const W = 560, H = 330, scale = 2;
     const canvas = document.createElement("canvas");
     canvas.width = W * scale; canvas.height = H * scale;
@@ -1236,7 +1501,8 @@ window.Components = (function () {
     modal.appendChild(actions);
     overlay.appendChild(modal);
     overlay.hidden = false;
-    overlay.addEventListener("click", e => { if (e.target === overlay) closeOverlay(); });
+    prepareOverlayDialog(modal, "certificate-title");
+    overlay.onclick = e => { if (e.target === overlay) closeOverlay(); };
   }
 
   function drawCertificate(ctx, W, H, s) {
@@ -1268,7 +1534,12 @@ window.Components = (function () {
 
   function closeOverlay() {
     const overlay = document.getElementById("overlay");
+    if (overlayUntrap) { overlayUntrap(); overlayUntrap = null; }
     overlay.hidden = true; overlay.innerHTML = "";
+    overlay.onclick = null;
+    const target = overlayReturn;
+    overlayReturn = null;
+    if (target && target.isConnected && typeof target.focus === "function") requestAnimationFrame(() => target.focus());
   }
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -1276,6 +1547,8 @@ window.Components = (function () {
   return {
     buildHome, buildStationPage, buildCard, buildQuiz, buildGlossary,
     buildStationNav, wireLinking, animateBadge, showCertificate, closeOverlay,
-    buildScenarios, buildGraph, buildCost, buildNotFound, updateRing, startWelcome, Icons, icon
+    buildScenarios, buildGraph, buildCost, buildNotFound, updateRing, startWelcome,
+    buildStationHeader, buildStationNavigator, buildStageWorkbench, buildContextInspector,
+    buildInspectorDefault, wireWorkbench, syncWorkbench, Icons, icon
   };
 })();

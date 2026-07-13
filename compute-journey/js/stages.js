@@ -258,21 +258,14 @@ window.Stages = (function () {
       (extra || "") + ">" + DEFS + inner + "</svg>";
   }
 
-  /* 舞台级 2.5D 视差：指针在舞台上移动时，整幅画面轻微倾斜（reduced 时关闭） */
+  /* 舞台保持稳定：教学图需要可读的空间关系，不使用随指针倾斜的 2.5D 视差。 */
   function wire3D(mount) {
     const wrap = mount.parentElement;
     if (!wrap) return;
-    wrap.classList.add("stage-3d");
-    if (reduced()) { mount.style.removeProperty("--rx"); mount.style.removeProperty("--ry"); return; }
-    if (wrap.dataset.wired3d) return;
-    wrap.dataset.wired3d = "1";
-    wrap.addEventListener("pointermove", e => {
-      const r = wrap.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
-      mount.style.setProperty("--ry", (px * 6).toFixed(2) + "deg");
-      mount.style.setProperty("--rx", (-py * 5).toFixed(2) + "deg");
-    });
-    wrap.addEventListener("pointerleave", () => { mount.style.setProperty("--ry", "0deg"); mount.style.setProperty("--rx", "0deg"); });
+    wrap.classList.remove("stage-3d");
+    wrap.classList.add("stage-static");
+    mount.style.removeProperty("--rx");
+    mount.style.removeProperty("--ry");
   }
 
   /* ==================================================================
@@ -1017,7 +1010,7 @@ window.Stages = (function () {
       wrap.querySelectorAll('[data-col]').forEach(el => el.classList.toggle("col-hl", String(el.dataset.col) === String(col)));
     }
     function clearCol() { if (wrap) wrap.querySelectorAll(".col-hl").forEach(el => el.classList.remove("col-hl")); }
-    function progress(step) { let d = '<div class="dt-progress">'; for (let i = 0; i < 2; i++) d += '<span class="dot' + (i < step ? " done" : "") + '"></span>'; return d + "</div>"; }
+    function progress(step) { let d = '<div class="dt-progress" aria-label="决策进度">'; for (let i = 0; i < 3; i++) d += '<span class="dot' + (i < step ? " done" : "") + '"></span>'; return d + "</div>"; }
     function renderQ1() {
       clearCol();
       box.innerHTML = '<h4><span class="dt-icon">◈</span> 决策树 · 三个问题帮你选</h4>' + progress(0) +
@@ -1027,7 +1020,7 @@ window.Stages = (function () {
       box.querySelector('[data-a="out-no"]').onclick = renderQ3;
     }
     function renderQ2() {
-      box.innerHTML = '<h4><span class="dt-icon">◈</span> 决策树 · 三个问题帮你选</h4>' + progress(1) +
+      box.innerHTML = '<h4><span class="dt-icon">◈</span> 决策树 · 三个问题帮你选</h4>' + progress(2) +
         '<div class="dt-step"><div class="dt-question"><span class="dt-num">②</span>用量长期稳定吗？</div>' +
         '<div class="dt-answers"><button class="dt-btn" data-a="s-yes">长期稳定</button><button class="dt-btn" data-a="s-no">说不准/波动</button></div></div>';
       box.querySelector('[data-a="s-yes"]').onclick = () => showResult(RESULT.reserved);
@@ -1074,7 +1067,8 @@ window.Stages = (function () {
     // sparkline
     let spk = "M560 116 ";
     for (let i = 1; i <= 14; i++) spk += "L" + (560 + i * 16) + " " + (116 + Math.sin(i * 1.2) * 12 - (i > 11 ? 22 : 0)) + " ";
-    mon += '<path class="optional-glow" d="' + spk + '" fill="none" stroke="var(--red)" stroke-width="2" opacity=".85" filter="url(#fx-glow)"/>';
+    mon += '<path class="optional-glow" d="' + spk + '" fill="none" stroke="var(--cyan)" stroke-width="2" opacity=".85" filter="url(#fx-glow)"/>';
+    mon += label(670, 82, "GPU 利用率 · 演示趋势", { size: 9.5, fill: "var(--text-3)", cls: "mono" });
     mon += scanLine(548, 86, 246, 56, "v");
     s += hot(station, "monitor", mon, { ring: { x: 144, y: 64, w: 672, h: 104, rx: 14 } });
 
@@ -1085,7 +1079,7 @@ window.Stages = (function () {
     alerts += '<line x1="' + tx + '" y1="' + startY + '" x2="' + tx + '" y2="' + (startY + (tl.length - 1) * stepY) + '" stroke="rgba(150,180,230,.3)" stroke-width="3"/>';
     tl.forEach((it, i) => {
       const y = startY + i * stepY, t = i / (tl.length - 1);
-      const col = t < 0.4 ? "var(--red)" : (t < 0.8 ? "var(--amber)" : "var(--green)");
+      const col = i === 0 ? "var(--green)" : (i === 1 ? "var(--red)" : (i < tl.length - 1 ? "var(--amber)" : "var(--green)"));
       const isAlert = i === 1;
       if (isAlert) alerts += '<circle class="' + (reduced() ? "" : "pulse-ring") + '" cx="' + tx + '" cy="' + y + '" r="11" fill="none" stroke="var(--red)" stroke-width="2"/>';
       alerts += orb(tx, y, 9, { fill: col, cls: "shape" });
@@ -1185,9 +1179,14 @@ window.Stages = (function () {
     wireHotspots(mount, station);
     wire3D(mount);
     const counter = mount.querySelector("[data-token-counter]");
-    let active = true, timer = null, value = 12840;
+    const simControl = document.createElement("div");
+    simControl.className = "stage-sim-control";
+    simControl.innerHTML = '<span>模拟流量 · 最近 60 秒</span><button type="button" data-token-toggle aria-pressed="false">暂停</button>';
+    mount.parentElement.appendChild(simControl);
+    const toggle = simControl.querySelector("[data-token-toggle]");
+    let active = true, paused = reduced() || window.innerWidth < 600, timer = null, value = 12840;
     function tick() {
-      if (!active || !counter || !counter.isConnected) return;
+      if (!active || paused || !counter || !counter.isConnected) return;
       value += 160 + (value % 7) * 13;
       counter.textContent = value.toLocaleString("en-US") + " TOK";
       if (counter.animate) counter.animate(
@@ -1196,8 +1195,17 @@ window.Stages = (function () {
       );
       timer = setTimeout(tick, 720);
     }
+    function updateToggle() {
+      if (!toggle) return;
+      toggle.textContent = paused ? "播放" : "暂停";
+      toggle.setAttribute("aria-pressed", paused ? "true" : "false");
+      if (paused && timer) { clearTimeout(timer); timer = null; }
+      if (!paused && !timer) timer = setTimeout(tick, 720);
+    }
+    if (toggle) toggle.addEventListener("click", () => { paused = !paused; updateToggle(); });
     if (!reduced()) timer = setTimeout(tick, 720);
-    return { cleanup: function () { active = false; if (timer) clearTimeout(timer); } };
+    else updateToggle();
+    return { cleanup: function () { active = false; if (timer) clearTimeout(timer); simControl.remove(); } };
   }
 
   /* ==================================================================
@@ -1217,6 +1225,12 @@ window.Stages = (function () {
   };
 
   function renderStage(station, mount) {
+    if (window.StageArtLateV5 && window.StageArtLateV5.canRender(station.visual)) {
+      return window.StageArtLateV5.render(station, mount);
+    }
+    if (window.StageArtV4 && window.StageArtV4.canRender(station.visual)) {
+      return window.StageArtV4.render(station, mount);
+    }
     const fn = RENDERERS[station.visual];
     if (!fn) { mount.innerHTML = svgWrap('<text x="480" y="300" class="stage-label" text-anchor="middle" fill="var(--text-2)">舞台开发中</text>'); return null; }
     return fn(station, mount);

@@ -12,7 +12,7 @@
 
   /* ------------------------------ 状态 ------------------------------ */
   const App = {
-    state: { route: "home", stationId: null, drawerPath: [], advanced: false, presenter: false },
+    state: { route: "home", stationId: null, drawerPath: [], advanced: false, presenter: false, workbench: null },
     renderedStationId: null,
     stageController: null
   };
@@ -49,8 +49,14 @@
     setFontsize(v) { this.set("settings:fontsize", v); },
     depth() { return this.get("settings:depth") || ""; },
     setDepth(v) { this.set("settings:depth", v); },
-    role() { return this.get("role") || ""; },
-    setRole(v) { this.set("role", v); },
+    /*
+     * 这项设置目前只决定知识卡的默认阅读深度，并不改变站点、场景或首页排序。
+     * role()/setRole() 保留为旧组件兼容别名；新状态名明确表达真实行为。
+     */
+    knowledgeProfile() { return this.get("knowledge:profile") || this.get("role") || ""; },
+    setKnowledgeProfile(v) { this.set("knowledge:profile", v); this.del("role"); },
+    role() { return this.knowledgeProfile(); },
+    setRole(v) { this.setKnowledgeProfile(v); },
     resume() { return this.get("resume") || ""; },
     setResume(v) { this.set("resume", v); },
     tourDone() { return this.get("tour:done") === "1"; },
@@ -117,11 +123,14 @@
   }
 
   /* ------------------------------ 路由 ------------------------------ */
-  const KNOWN = { glossary: 1, scenarios: 1, graph: 1, cost: 1, atlas: 1, labs: 1 };
+  const KNOWN = { glossary: 1, scenarios: 1, atlas: 1, labs: 1 };
   function parseHash() {
     let h = location.hash.replace(/^#/, "");
     if (!h || h === "/") return { route: "home" };
     const parts = h.split("/").filter(Boolean);
+    // 旧入口继续可用，但用 replaceState 收敛到唯一正式页面，不污染返回历史。
+    if (parts[0] === "graph" && parts.length === 1) return { route: "redirect", target: "#/atlas" };
+    if (parts[0] === "cost" && parts.length === 1) return { route: "redirect", target: "#/lab/token" };
     if (KNOWN[parts[0]] && parts.length === 1) return { route: parts[0] };
     if (parts[0] === "lab") return parts[1] ? { route: "lab", labId: parts[1] } : { route: "labs" };
     if (parts[0] === "s" && parts[1]) {
@@ -152,6 +161,95 @@
   const appEl = document.getElementById("app");
   const drawerEl = document.getElementById("drawer");
   const drawerInner = document.getElementById("drawerInner");
+  const topbarEl = document.getElementById("topbar");
+  const inlineInspectorQuery = window.matchMedia ? window.matchMedia("(min-width: 1280px)") : null;
+  let drawerModalOpen = false;
+  let drawerReturn = null;
+  let drawerUntrap = null;
+  let drawerPathKey = "";
+  let drawerStationId = null;
+
+  function setBackgroundInert(on) {
+    appEl.inert = !!on;
+    if (topbarEl) topbarEl.inert = !!on;
+    document.body.classList.toggle("drawer-modal-open", !!on);
+  }
+
+  function drawerFallbackTarget(path) {
+    const ids = path || [];
+    if (ids[0] === "adv") return appEl.querySelector(".advanced-entry") || appEl;
+    const root = ids[0];
+    if (!root) return appEl;
+    return appEl.querySelector('.part-row[data-node="' + cssEscape(root) + '"]') ||
+      appEl.querySelector('.station-stage [data-node="' + cssEscape(root) + '"]') ||
+      appEl.querySelector('[data-node="' + cssEscape(root) + '"]') || appEl;
+  }
+
+  function prepareDrawerTitle(container, prefix) {
+    const title = container && container.querySelector(".card-title");
+    if (!title) return null;
+    title.id = prefix + "-title";
+    title.setAttribute("tabindex", "-1");
+    return title;
+  }
+
+  function focusSafely(target) {
+    if (!target || !target.isConnected || typeof target.focus !== "function") return false;
+    try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
+    return document.activeElement === target;
+  }
+
+  function activateDrawerModal(station, path) {
+    const pathKey = station.id + "/" + (path || []).join("/");
+    const active = document.activeElement;
+    if (!drawerModalOpen || drawerStationId !== station.id || !drawerReturn || !drawerReturn.isConnected) {
+      drawerReturn = active && active !== document.body && active !== document.documentElement && !drawerEl.contains(active)
+        ? active : drawerFallbackTarget(path);
+    }
+    drawerStationId = station.id;
+    drawerModalOpen = true;
+    drawerEl.setAttribute("role", "dialog");
+    drawerEl.setAttribute("aria-modal", "true");
+    drawerEl.setAttribute("aria-hidden", "false");
+    const title = prepareDrawerTitle(drawerEl, "drawer-card");
+    if (title) drawerEl.setAttribute("aria-labelledby", title.id);
+    else drawerEl.removeAttribute("aria-labelledby");
+    setBackgroundInert(true);
+    if (!drawerUntrap) drawerUntrap = trapFocus(drawerEl);
+
+    if (drawerPathKey !== pathKey || !drawerEl.contains(document.activeElement)) {
+      requestAnimationFrame(() => {
+        if (!drawerModalOpen) return;
+        if (!focusSafely(title)) {
+          const close = drawerEl.querySelector(".drawer-close");
+          focusSafely(close);
+        }
+      });
+    }
+    drawerPathKey = pathKey;
+  }
+
+  function deactivateDrawerModal(options) {
+    options = options || {};
+    const wasOpen = drawerModalOpen;
+    const returnTarget = drawerReturn;
+    if (drawerUntrap) { drawerUntrap(); drawerUntrap = null; }
+    drawerModalOpen = false;
+    drawerPathKey = "";
+    drawerStationId = null;
+    drawerEl.removeAttribute("aria-modal");
+    drawerEl.removeAttribute("aria-labelledby");
+    drawerEl.setAttribute("aria-hidden", "true");
+    setBackgroundInert(false);
+    drawerReturn = null;
+
+    if (wasOpen && options.restore !== false) {
+      requestAnimationFrame(() => {
+        if (focusSafely(returnTarget)) return;
+        focusSafely(options.fallback || appEl);
+      });
+    }
+  }
 
   function cleanupStageController() {
     const controller = App.stageController;
@@ -168,7 +266,7 @@
 
   function simplePage(route) {
     cleanupStageController();
-    App.state.stationId = null; App.state.drawerPath = []; App.state.advanced = false;
+    App.state.stationId = null; App.state.drawerPath = []; App.state.advanced = false; App.state.workbench = null;
     App.renderedStationId = null;
     setAccent("var(--blue)");
     syncDrawer();
@@ -188,6 +286,10 @@
   function render() {
     hideTooltip();
     const parsed = parseHash();
+    if (parsed.route === "redirect") {
+      history.replaceState(null, "", location.pathname + location.search + parsed.target);
+      return render();
+    }
     App.state.route = parsed.route;
     App.state.labId = parsed.labId || null;
 
@@ -221,6 +323,9 @@
       if (App.stageController && typeof App.stageController.syncDrawer === "function") {
         App.stageController.syncDrawer(App.state.drawerPath.slice());
       }
+      if (Components.syncWorkbench) {
+        Components.syncWorkbench(appEl.querySelector(".station-workbench-page"), station, App.state.drawerPath.slice());
+      }
       store.setResume(location.hash);
     }
 
@@ -232,21 +337,56 @@
 
   function syncDrawer() {
     const path = App.state.drawerPath;
-    if (App.state.route === "station" && path.length > 0) {
-      const station = findStation(App.state.stationId);
+    const isStation = App.state.route === "station" && App.state.stationId;
+    const station = isStation ? findStation(App.state.stationId) : null;
+    const inspector = document.querySelector(".knowledge-inspector-content");
+    const inlineInspector = !!(station && inspector && inlineInspectorQuery && inlineInspectorQuery.matches);
+
+    if (isStation && path.length > 0) {
       const advanced = App.state.advanced;
       const chain = advanced ? resolveAdvanced(station, path.slice(1)) : resolvePath(station, path);
       // 记录已读（真实节点，最后一层）
       const last = chain[chain.length - 1];
       if (!advanced && last && last.id) { store.markRead(station.id, chain[0].id); refreshProgressUI(); }
+
+      if (inlineInspector) {
+        const movedFromModal = drawerModalOpen;
+        deactivateDrawerModal({ restore: false });
+        inspector.innerHTML = "";
+        inspector.appendChild(Components.buildCard(station, chain, { advanced: advanced }));
+        const inlineTitle = prepareDrawerTitle(inspector, "inspector-card");
+        const inlineAside = inspector.closest(".knowledge-inspector");
+        if (inlineAside) {
+          inlineAside.removeAttribute("aria-modal");
+          inlineAside.setAttribute("role", "region");
+          if (inlineTitle) inlineAside.setAttribute("aria-labelledby", inlineTitle.id);
+        }
+        drawerEl.classList.remove("open");
+        drawerEl.setAttribute("aria-hidden", "true");
+        if (movedFromModal) requestAnimationFrame(() => focusSafely(inlineTitle));
+        return;
+      }
       drawerInner.innerHTML = "";
       drawerInner.appendChild(Components.buildCard(station, chain, { advanced: advanced }));
       drawerEl.classList.add("open");
-      drawerEl.setAttribute("aria-hidden", "false");
       drawerEl.scrollTop = 0;
+      activateDrawerModal(station, path);
     } else {
+      if (inlineInspector) {
+        deactivateDrawerModal({ restore: false });
+        inspector.innerHTML = "";
+        inspector.appendChild(Components.buildInspectorDefault(station));
+        const inlineAside = inspector.closest(".knowledge-inspector");
+        if (inlineAside) {
+          inlineAside.removeAttribute("aria-modal");
+          inlineAside.removeAttribute("aria-labelledby");
+          inlineAside.setAttribute("role", "region");
+        }
+        const start = inspector.querySelector("[data-inspector-start]");
+        if (start) start.addEventListener("click", () => App.openNode(station.id, [start.dataset.inspectorStart]));
+      }
       drawerEl.classList.remove("open");
-      drawerEl.setAttribute("aria-hidden", "true");
+      deactivateDrawerModal({ restore: true, fallback: appEl });
     }
   }
   App.syncDrawer = syncDrawer;
@@ -255,7 +395,7 @@
   function refreshProgressUI() {
     if (App.state.route !== "station") return;
     const station = findStation(App.state.stationId);
-    const ring = appEl.querySelector(".station-left .progress-ring");
+    const ring = appEl.querySelector(".workbench-progress .progress-ring, .station-left .progress-ring");
     if (ring && station) Components.updateRing(ring, store.stationProgress(station).frac);
     // 左栏行“读过”勾选
     appEl.querySelectorAll(".part-row[data-node]").forEach(row => {
@@ -311,13 +451,17 @@
 
     const homeLi = document.createElement("li");
     homeLi.setAttribute("role", "option");
+    homeLi.setAttribute("tabindex", "-1");
+    homeLi.dataset.hash = "#/";
     homeLi.innerHTML = '<span class="num-dot" style="background:var(--blue)"></span>首页';
     homeLi.addEventListener("click", () => { go("#/"); closeMetroMenu(); });
     metroSelectMenu.appendChild(homeLi);
     stations.forEach(s => {
       const li = document.createElement("li");
       li.setAttribute("role", "option");
+      li.setAttribute("tabindex", "-1");
       li.dataset.stationId = s.id;
+      li.dataset.hash = "#/s/" + s.id;
       li.innerHTML = '<span class="num-dot" style="background:' + s.color + '"></span>第 ' + s.num + " 站 · " + s.name;
       li.addEventListener("click", () => { go("#/s/" + s.id); closeMetroMenu(); });
       metroSelectMenu.appendChild(li);
@@ -345,11 +489,49 @@
       const map = { glossary: "术语表", scenarios: "场景库", graph: "知识图谱", atlas: "图谱 Atlas", labs: "实验室", lab: "实验室", cost: "成本估算", notfound: "走岔了" };
       metroSelectLabel.textContent = map[App.state.route] || "首页";
     }
+    metroSelectMenu.querySelectorAll('[role="option"]').forEach(option => {
+      const current = App.state.route === "station"
+        ? option.dataset.stationId === App.state.stationId
+        : option.dataset.hash === "#/" && App.state.route === "home";
+      option.setAttribute("aria-selected", current ? "true" : "false");
+    });
   }
 
-  function openMetroMenu() { metroSelectMenu.hidden = false; metroSelectBtn.setAttribute("aria-expanded", "true"); }
-  function closeMetroMenu() { metroSelectMenu.hidden = true; metroSelectBtn.setAttribute("aria-expanded", "false"); }
+  function metroOptions() { return Array.from(metroSelectMenu.querySelectorAll('[role="option"]')); }
+  function openMetroMenu(focusOption) {
+    metroSelectMenu.hidden = false;
+    metroSelectBtn.setAttribute("aria-expanded", "true");
+    if (focusOption) {
+      const options = metroOptions();
+      const current = options.find(option => option.getAttribute("aria-selected") === "true") || options[0];
+      if (current) current.focus();
+    }
+  }
+  function closeMetroMenu(restoreFocus) {
+    metroSelectMenu.hidden = true;
+    metroSelectBtn.setAttribute("aria-expanded", "false");
+    if (restoreFocus) metroSelectBtn.focus();
+  }
   metroSelectBtn.addEventListener("click", () => { if (metroSelectMenu.hidden) openMetroMenu(); else closeMetroMenu(); });
+  metroSelectBtn.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); openMetroMenu(true); }
+  });
+  metroSelectMenu.addEventListener("keydown", e => {
+    const options = metroOptions();
+    const current = options.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); closeMetroMenu(true); return; }
+    if (e.key === "Home" || e.key === "End" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      let next = current;
+      if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = options.length - 1;
+      else if (e.key === "ArrowDown") next = current < options.length - 1 ? current + 1 : 0;
+      else next = current > 0 ? current - 1 : options.length - 1;
+      if (options[next]) options[next].focus();
+    } else if ((e.key === "Enter" || e.key === " ") && current >= 0) {
+      e.preventDefault(); options[current].click();
+    }
+  });
   document.addEventListener("click", e => { if (!metroSelect.contains(e.target)) closeMetroMenu(); });
 
   /* ------------------------------ 徽章计数 ------------------------------ */
@@ -386,9 +568,14 @@
   function applyMotion(v) { document.documentElement.setAttribute("data-motion", v === "reduce" ? "reduce" : "full"); }
   function applyQuality(v) { document.documentElement.setAttribute("data-quality", v === "low" ? "low" : "high"); }
   function applyFontsize(v) { document.documentElement.setAttribute("data-fontsize", v === "large" ? "large" : "normal"); }
-  function applyRole(v) { document.body.setAttribute("data-role", v || "none"); }
+  function applyKnowledgeProfile(v) {
+    document.body.setAttribute("data-knowledge-profile", v || "none");
+    document.body.removeAttribute("data-role");
+  }
+  /* 旧组件 API 兼容别名；该设置只影响默认知识深度。 */
+  function applyRole(v) { applyKnowledgeProfile(v); }
   App.applyTheme = applyTheme; App.applyMotion = applyMotion; App.applyQuality = applyQuality;
-  App.applyFontsize = applyFontsize; App.applyRole = applyRole;
+  App.applyFontsize = applyFontsize; App.applyKnowledgeProfile = applyKnowledgeProfile; App.applyRole = applyRole;
 
   /* ------------------------------ tooltip ------------------------------ */
   const tooltipEl = document.getElementById("tooltip");
@@ -599,7 +786,7 @@
         setRow("画质", seg("quality", store.quality(), [{ v: "high", label: "高" }, { v: "low", label: "低" }])) +
         setRow("字号", seg("fontsize", store.fontsize(), [{ v: "normal", label: "标准" }, { v: "large", label: "大" }])) +
         setRow("讲解模式", seg("presenter", store.presenter() ? "on" : "off", [{ v: "off", label: "关" }, { v: "on", label: "开" }])) +
-        setRow("角色", seg("role", store.role() || "none", [{ v: "sales", label: "销售" }, { v: "manage", label: "职能" }, { v: "tech", label: "技术" }])) +
+        setRow("默认阅读深度", seg("knowledgeProfile", store.knowledgeProfile() || "none", [{ v: "sales", label: "通用 L1" }, { v: "manage", label: "摘要 L0" }, { v: "tech", label: "技术 L2" }])) +
         '<div class="settings-actions">' +
           '<button class="btn-secondary" id="retour">重看引导</button>' +
           '<button class="btn-secondary danger" id="resetLocal">清除本地进度</button>' +
@@ -624,7 +811,7 @@
     box.querySelector("#retour").addEventListener("click", () => { closeSettings(); store.set("tour:done", "0"); Components.startWelcome(true); });
     box.querySelector("#resetLocal").addEventListener("click", () => {
       if (confirm("确定清除本机的学习进度、徽章与设置吗？")) {
-        ["presenter", "role", "resume", "tour:done"].forEach(store.del.bind(store));
+        ["presenter", "role", "knowledge:profile", "resume", "tour:done"].forEach(store.del.bind(store));
         stations.forEach(s => { store.del("visited:" + s.id); store.del("badge:" + s.id); s.nodes.forEach(n => store.del("progress:" + s.id + "/" + n.id)); });
         ["theme", "motion", "quality", "fontsize"].forEach(k => store.del("settings:" + k));
         location.reload();
@@ -641,7 +828,11 @@
     else if (set === "quality") { store.setQuality(v); applyQuality(v); redrawCurrentStation(); }
     else if (set === "fontsize") { store.setFontsize(v); applyFontsize(v); }
     else if (set === "presenter") { const on = v === "on"; store.setPresenter(on); applyPresenter(on); }
-    else if (set === "role") { const rv = v === "none" ? "" : v; store.setRole(rv); applyRole(rv); if (App.state.route === "home") render(); }
+    else if (set === "knowledgeProfile") {
+      const profile = v === "none" ? "" : v;
+      store.setKnowledgeProfile(profile);
+      applyKnowledgeProfile(profile);
+    }
   }
   function settingsScrim(e) { if (e.target === settingsPanel) closeSettings(); }
   function closeSettings() {
@@ -680,6 +871,13 @@
     buildMetro();
     applyPresenter(store.presenter());
     window.addEventListener("hashchange", render);
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (App.state.route === "station") syncDrawer();
+      }, 120);
+    });
     render();
     if (!store.tourDone()) Components.startWelcome(false);
   }
